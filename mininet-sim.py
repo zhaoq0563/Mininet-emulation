@@ -1,136 +1,18 @@
 #!/usr/bin/python
 
-# from mininet.fdm_intf_handoff import FDM
-# from mininet.net import Mininet
-# from mininet.node import OVSKernelAP
-# from mininet.link import TCLink
-# from mininet.cli import CLI
-# from mininet.log import setLogLevel, info
+from mininet.net import Mininet
+from mininet.node import OVSKernelAP
+from mininet.link import TCLink
+from mininet.cli import CLI
+from mininet.log import setLogLevel, info
 
 from subprocess import call
 import time, random, os, json, sys
 
-"""Traffic generator related functions"""
-
-def sendingDITGTraffic(nodes, folderName, numOfSPSta, numOfMPSta, numOfFixApSta, numOfFixLteSta, demand, mEnd, MPStaSet, ethPerSta, wlanPerSta):
-    print "*** Starting D-ITG Server on host ***"
-    host = nodes['h1']
-    info('Starting D-ITG server...\n')
-    host.cmd('pushd ~/D-ITG-2.8.1-r1023/bin')
-    host.cmd('./ITGRecv &')
-    host.cmd('PID=$!')
-    host.cmd('popd')
-    if not os.path.exists(folderName):
-        os.mkdir(folderName)
-        user = os.getenv('SUDO_USER')
-        os.system('sudo chown -R ' + user + ':' + user + ' ' + folderName)
-    host.cmd('tcpdump -i h1-eth0 -w ' + folderName + '/h1.pcap &')
-
-    print "*** Starting D-ITG Clients on stations ***"
-    info('Starting D-ITG clients...\n')
-    time.sleep(1)
-    for i in range(1, numOfSPSta+numOfMPSta+numOfFixApSta+numOfFixLteSta+1):
-        sender = nodes['sta'+str(i)]
-        receiver = nodes['h'+str(1)]
-        bwReq = demand['sta'+str(i)]*250
-        ITGTest(sender, receiver, bwReq, (mEnd-1)*1000)
-        if i<=numOfSPSta+numOfMPSta and i in MPStaSet:
-            for j in range(0, wlanPerSta):
-                sender.cmd('tcpdump -i sta'+str(i)+'-wlan'+str(j)+' -w '+folderName+'/sta'+str(i)+'-wlan'+str(j)+'.pcap &')
-            for j in range(wlanPerSta, ethPerSta+wlanPerSta):
-                sender.cmd('tcpdump -i sta'+str(i)+'-eth'+str(j)+' -w '+folderName+'/sta'+str(i)+'-eth'+str(j)+'.pcap &')
-        elif i<=numOfSPSta+numOfMPSta+numOfFixApSta:
-            sender.cmd('tcpdump -i sta'+str(i)+'-wlan0 -w '+folderName+'/sta'+str(i)+'-wlan0.pcap &')
-        else:
-            sender.cmd('tcpdump -i sta'+str(i)+'-eth1 -w '+folderName+'/sta'+str(i)+'-eth1.pcap &')
-
-
-def setupIperfServer(nodes, folderName, numOfSPSta, numOfMPSta, numOfFixApSta, numOfFixLteSta):
-    """Set up iPerf3 Server on host."""
-    print "*** Starting iPerf3 Server on host ***"
-    host = nodes['h1']
-    info("Starting iPerf3 server...\n")
-    base_port = 5502
-    for i in range(1, numOfSPSta+numOfMPSta+numOfFixApSta+numOfFixLteSta+1):
-        host.cmd('iperf3 -s -p ' + str(base_port+i) + ' &')
-    if not os.path.exists(folderName):
-        os.mkdir(folderName)
-        user = os.getenv('SUDO_USER')
-        os.system('sudo chown -R '+user+':'+user+' '+folderName)
-    host.cmd('tcpdump -i h1-eth0 -w '+folderName+'/h1.pcap &')
-    return base_port
-
-
-def startClientTrafficMonitoring(nodes, folderName, numOfSPSta, numOfMPSta, numOfFixApSta, numOfFixLteSta, ethPerSta, wlanPerSta):
-    """Start traffic montioring of clients."""
-    print "*** Starting tcpdump for each client ***"
-    info("Starting tcpdump for each client...\n")
-    for i in range(1, numOfSPSta+numOfMPSta+numOfFixApSta+numOfFixLteSta+1):
-        sender = nodes['sta'+str(i)]
-        if i <= numOfSPSta+numOfMPSta:
-            for j in range(0, wlanPerSta):
-                sender.cmd('tcpdump -i sta'+str(i)+'-wlan'+str(j)+' -w '+folderName+'/sta'+str(i)+'-wlan'+str(j)+'.pcap &')
-            for j in range(wlanPerSta, ethPerSta+wlanPerSta):
-                sender.cmd('tcpdump -i sta'+str(i)+'-eth'+str(j)+' -w '+folderName+'/sta'+str(i)+'-eth'+str(j)+'.pcap &')
-
-
-def startIperfClients(nodes, numOfSPSta, numOfMPSta, numOfFixApSta, numOfFixLteSta, demand, mEnd, base_port):
-    """Set up iPerf3 Clients on stations."""
-    print "*** Starting iPerf3 Clients on stations ***"
-    info('Starting iPerf3 clients...\n')
-    for i in range(1, numOfSPSta+numOfMPSta+numOfFixApSta+numOfFixLteSta+1):
-        sender = nodes['sta'+str(i)]
-        receiver = nodes['h1']
-        bwReq = demand['sta'+str(i)]
-        iperf3Test(sender, receiver, bwReq, mEnd, base_port+i)
-
-
-def sendingIperfTraffic(nodes, folderName, numOfSPSta, numOfMPSta, numOfFixApSta, numOfFixLteSta, demand, mEnd, ethPerSta, wlanPerSta):
-    """Send traffic via iPerf3 traffic generator."""
-    print "*** Starting iPerf3 Server on host ***"
-    host = nodes['h1']
-    info('Starting iPerf3 server...\n')
-    base_port = 5502
-    for i in range(1, numOfSPSta+numOfMPSta+numOfFixApSta+numOfFixLteSta+1):
-        host.cmd('iperf3 -s -p ' + str(base_port+i) + ' &')
-    if not os.path.exists(folderName):
-        os.mkdir(folderName)
-        user = os.getenv('SUDO_USER')
-        os.system('sudo chown -R '+user+':'+user+' '+folderName)
-    host.cmd('tcpdump -i h1-eth0 -w '+folderName+'/h1.pcap &')
-
-    print "*** Starting iPerf3 Clients on stations ***"
-    info('Starting iPerf3 clients...\n')
-    time.sleep(5)
-    for i in range(1, numOfSPSta+numOfMPSta+numOfFixApSta+numOfFixLteSta+1):
-        sender = nodes['sta'+str(i)]
-        receiver = nodes['h1']
-        bwReq = demand['sta'+str(i)]
-        iperf3Test(sender, receiver, bwReq, mEnd, base_port+i)
-        if i<=numOfSPSta+numOfMPSta:
-            for j in range(0, wlanPerSta):
-                sender.cmd('tcpdump -i sta'+str(i)+'-wlan'+str(j)+' -w '+folderName+'/sta'+str(i)+'-wlan'+str(j)+'.pcap &')
-            for j in range(wlanPerSta, ethPerSta+wlanPerSta):
-                sender.cmd('tcpdump -i sta'+str(i)+'-eth'+str(j)+' -w '+folderName+'/sta'+str(i)+'-eth'+str(j)+'.pcap &')
-
-
-def ITGTest(client, server, bw, sTime):
-    info('Sending message from ', client.name, '<->', server.name, '\n')
-    client.cmd('pushd ~/D-ITG-2.8.1-r1023/bin')
-    client.cmdPrint('./ITGSend -T TCP -a 10.0.0.1 -c 500 -m rttm -O '+str(bw)+' -t '+str(sTime)+' -l log/'+str(client.name)+'.log -x log/'+str(client.name)+'-'+str(server.name)+'.log &')
-    client.cmd('PID_'+client.name+'=$!')
-    client.cmd('popd')
-
-
-def iperf3Test(client, server, bw, sTime, port):
-    info('Sending iperf3 from ', client.name, '<->', server.name, '\n')
-    client.cmdPrint('iperf3 -c 10.0.0.1 -b ' + str(bw) + 'M -p '+str(port)+' -t '+str(sTime)+' &')
-    client.cmdPrint('PID_'+client.name+'=$!')
-
 
 """Main function of the simulation"""
 
-def mobileNet(name, mptcpEnabled, fdmEnabled, replay, configFile):
+def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
 
     # call(["sudo", "sysctl", "-w", "net.mptcp.mptcp_enabled="+str(mptcpEnabled)])
     # if not mptcpEnabled:
@@ -159,14 +41,23 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, replay, configFile):
     print "*** Creating nodes ***"
     nodes = {}
 
-    # node = net.addHost('h1', ip='10.0.0.1')
-    # nodes['h1'] = node
+    node = net.addHost('h1', ip='10.0.0.1')
+    nodes['h1'] = node
+    node = net.addSwitch('s1')
+    nodes['s1'] = node
+    net.addLink(nodes['h1'], nodes['s1'])
 
     for sat,i in zip(sats,range(1,len(sats)+1)):
-        sta_name = 'sta'+str(i)
+        sta_name = 'ap'+str(i)
         sat_id = sat['satID']
         print sta_name, sat_id
-        node = net.addStation(sta_name, position=str(50+(5*i))+',50,0')
+        ap_ssid = sta_name + '_ssid'
+        ap_mode = 'g'
+        ap_chan = '1'
+        ap_range = '40'
+        # node = net.addStation(sta_name, position=str(50+(5*i))+',50,0')
+        node = net.addAccessPoint(sta_name, ssid=ap_ssid, mode=ap_mode, channel=ap_chan, position=str(50+(5*i))+',50,0', range=ap_range)
+        net.addLink(nodes['s1'], node)
         nodes[sat_id] = node
 
     for usr,i in zip(usrs,range(len(sats)+1,len(sats)+len(usrs))):
@@ -183,8 +74,6 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, replay, configFile):
         node_s = nodes[src_id]
         node_d = nodes[des_id]
         net.addLink(node_s, node_d)
-
-    time.sleep(50)
 
     # '''Switch'''
     # numOfSwitch = numOfAp+numOfLte*2+1                        # last one is for server h1
@@ -251,7 +140,7 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, replay, configFile):
     print "*** Starting network simulation ***"
     net.start()
 
-
+    time.sleep(50)
 
     # print "*** Addressing for station ***"
     # for i in range(1, numOfSPSta+numOfMPSta+1):
@@ -381,12 +270,12 @@ if __name__ == '__main__':
         name = raw_input('--- Please name this testing: ')
         break
 
-    # setLogLevel('info')
+    setLogLevel('info')
 
     # if fdmEnabled==0:
     #     mobileNet(name+'-mptcp', 1, 0, 'i', 0, configName + '.json')
     # else:
     #     mobileNet(name+'-fdm', 1, 1, 'i', 0, configName + '.json')
 
-    mobileNet(name, 1, 0, 0, configName + '.json')
+    mobileNet(name, 1, 0, configName + '.json')
 

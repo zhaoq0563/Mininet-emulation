@@ -1,0 +1,132 @@
+{
+	"SatcomScnDef" : {
+		"sateDef" : [
+			{"satName":"GPS BIIR-8", "satID":27663,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-9", "satID":27704,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-10", "satID":28129,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-11", "satID":28190,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-12", "satID":28361,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-13", "satID":28474,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-1", "satID":28874,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-2", "satID":29486,
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			}
+		],
+		"userDef":[
+			{	"name":"MC Colorado Spring",
+				"ID":1,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-104.8214},
+						   {"paraID":2, "paraName":"LatiDeg", "value":38.8339},
+						   {"paraID":3, "paraName":"AltitudeM", "value":50.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]
+			},
+			{	"name":"MS Cape Canaveral",
+				"ID":2,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-80.6077},
+						   {"paraID":2, "paraName":"LatiDeg", "value":28.3922},
+						   {"paraID":3, "paraName":"AltitudeM", "value":10.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]
+			},
+			{	"name":"Hawaii",
+				"ID":3,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-155.5828},
+						   {"paraID":2, "paraName":"LatiDeg", "value":7.9467},
+						   {"paraID":3, "paraName":"AltitudeM", "value":150.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]
+			},
+			{	"name":"Ascension Island",
+				"ID":4,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-14.3559},
+						   {"paraID":2, "paraName":"LatiDeg", "value":39.75},
+						   {"paraID":3, "paraName":"AltitudeM", "value":1250.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]
+			},
+			{	"name":"Diego Garcia",
+				"ID":5,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":51.5},
+						   {"paraID":2, "paraName":"LatiDeg", "value":-7.3195},
+						   {"paraID":3, "paraName":"AltitudeM", "value":250.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]
+			},
+			{	"name":"DKwajalein Island",
+				"ID":6,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":167.4243},
+						   {"paraID":2, "paraName":"LatiDeg", "value":9.1898},
+						   {"paraID":3, "paraName":"AltitudeM", "value":250.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]
+			}
+		],
+		"scnLinkDef":[
+			{	"linkID":15,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":0,"srcID":2},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28874},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"minEleAngle","value":30.0,"unit":"deg"}
+				]
+			},
+			{	"linkID":16,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":0,"srcID":2},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28190},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"minEleAngle","value":30.0,"unit":"deg"}
+				]
+			}
+		]
+	}
+}
