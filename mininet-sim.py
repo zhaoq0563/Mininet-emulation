@@ -41,30 +41,29 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     print "*** Creating nodes ***"
     nodes = {}
 
-    node = net.addHost('h1', ip='10.0.0.1')
+    node = net.addHost('h1')
     nodes['h1'] = node
     node = net.addSwitch('s1')
     nodes['s1'] = node
     net.addLink(nodes['h1'], nodes['s1'])
 
     for sat,i in zip(sats,range(1,len(sats)+1)):
-        sta_name = 'ap'+str(i)
-        sat_id = sat['satID']
-        print sta_name, sat_id
-        ap_ssid = sta_name + '_ssid'
-        ap_mode = 'g'
-        ap_chan = '1'
-        ap_range = '40'
-        # node = net.addStation(sta_name, position=str(50+(5*i))+',50,0')
-        node = net.addAccessPoint(sta_name, ssid=ap_ssid, mode=ap_mode, channel=ap_chan, position=str(50+(5*i))+',50,0', range=ap_range)
-        net.addLink(nodes['s1'], node)
+        sat_name = 'h'+str(i)
+        sat_id = str(sat['satID'])+'-sat'
+        print sat_name, sat_id
+        swi_name = 's'+str(i)
+        swi_id = sat['satID']
+        node = net.addHost(sat_name, position=str(50+(5*i))+',50,0')
         nodes[sat_id] = node
+        node = net.addSwitch(swi_name)
+        nodes[swi_id] = node
+        net.addLink(nodes[sat_id], nodes[swi_id])
 
     for usr,i in zip(usrs,range(len(sats)+1,len(sats)+len(usrs))):
-        sta_name = 'sta'+str(i)
+        usr_name = 'h'+str(i)
         usr_id = usr['ID']
-        print sta_name, usr_id
-        node = net.addStation(sta_name, position=str(50+(30*i))+',150,0')
+        print usr_name, usr_id
+        node = net.addHost(usr_name, position=str(50+(30*i))+',150,0')
         nodes[usr_id] = node
 
     for lnk in lnks:
@@ -103,12 +102,6 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     #     nets.append(ap_name)
     #     nodes[ap_name] = node
 
-    print "*** Configuring propagation model ***"
-    net.propagationModel(model=propModel, exp=exponent)
-
-    print "*** Configuring wifi nodes ***"
-    net.configureWifiNodes()
-
     # print "*** Associating and Creating links ***"
     # '''Backhaul links between switches'''
     # for i in range(1, numOfAp+numOfLte+1):
@@ -140,7 +133,7 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     print "*** Starting network simulation ***"
     net.start()
 
-    time.sleep(50)
+    CLI(net)
 
     # print "*** Addressing for station ***"
     # for i in range(1, numOfSPSta+numOfMPSta+1):
