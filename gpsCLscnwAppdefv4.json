@@ -1,0 +1,569 @@
+{	
+	"SatcomScnDef" : {
+		"sateDef" : [
+			{"satName":"GPS BIIR-2", "satID":24876, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			}, 
+			{"satName":"GPS BIIR-3", "satID":25933, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-4", "satID":26360, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-5", "satID":26407, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-6", "satID":26605, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-7", "satID":26690, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-8", "satID":27663, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-9", "satID":27704, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-10", "satID":28129, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-11", "satID":28190, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-12", "satID":28361, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIR-13", "satID":28474, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-1", "satID":28874, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-2", "satID":29486, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-3", "satID":29601, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-4", "satID":32260, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-5", "satID":32384, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-6", "satID":32711, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIRM-8", "satID":35752, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-1", "satID":36585, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-2", "satID":37753, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-3", "satID":38833, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-4", "satID":39166, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-5", "satID":39533, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-6", "satID":39741, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-7", "satID":40105, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-8", "satID":40294, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-9", "satID":40534, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-10", "satID":40730, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-11", "satID":41019, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			},
+			{"satName":"GPS BIIF-12", "satID":41328, 
+			 "Config":[ {"paraName":"outLinkMax","value":4.0},
+				    {"paraName":"inLinkMax","value":4.0},
+					{"paraName":"netIfnum","value":4.0}
+				  ]
+			}
+		],
+		"userDef":[
+			{	"name":"MC Colorado Spring",
+				"ID":1,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-104.8214}, 
+						   {"paraID":2, "paraName":"LatiDeg", "value":38.8339},
+						   {"paraID":3, "paraName":"AltitudeM", "value":50.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]						
+			},
+			{	"name":"MS Cape Canaveral",
+				"ID":2,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-80.6077}, 
+						   {"paraID":2, "paraName":"LatiDeg", "value":28.3922},
+						   {"paraID":3, "paraName":"AltitudeM", "value":10.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]	
+			}, 
+			{	"name":"Hawaii",
+				"ID":3,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-155.5828}, 
+						   {"paraID":2, "paraName":"LatiDeg", "value":7.9467},
+						   {"paraID":3, "paraName":"AltitudeM", "value":150.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]	
+			}, 
+			{	"name":"Ascension Island",
+				"ID":4,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-14.3559}, 
+						   {"paraID":2, "paraName":"LatiDeg", "value":39.75},
+						   {"paraID":3, "paraName":"AltitudeM", "value":1250.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]	
+			}, 
+			{	"name":"Diego Garcia",
+				"ID":5,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":51.5}, 
+						   {"paraID":2, "paraName":"LatiDeg", "value":-7.3195},
+						   {"paraID":3, "paraName":"AltitudeM", "value":250.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]	
+			},
+			{	"name":"DKwajalein Island",
+				"ID":6,
+				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":167.4243}, 
+						   {"paraID":2, "paraName":"LatiDeg", "value":9.1898},
+						   {"paraID":3, "paraName":"AltitudeM", "value":250.0},
+						   {"paraName":"outLinkMax","value":4.0},
+				           {"paraName":"inLinkMax","value":4.0},
+						   {"paraName":"netIfnum","value":10.0}
+						 ]	
+			}
+		],
+		"scnLinkDef":[
+			{	"linkID":1,
+				"Config":[ 	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":39533},
+						    {"paraID":102,"paraName":"linkDest","destType":1,"destID":38833},
+							{"paraID":201,"paraName":"TransGain","value":60.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":50.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":0.0,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":1.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":2,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":38833},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":39533},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":3,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":39533},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":32711},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":4,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":32711},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":39533},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":5,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":29486},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":32711},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":6,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":32711},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":29486},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":7,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":28874},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":32384},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":8,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":32384},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":28874},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":9,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":32384},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":28190},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":10,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":28190},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":32384},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":11,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":28190},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":40730},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"}
+				]
+			},
+			{	"linkID":12,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":40730},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":28190},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"},
+							{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":13,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":28874},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":40730},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"},
+							{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":14,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":40730},
+							{"paraID":102,"paraName":"linkDest","destType":1,"destID":28874},
+							{"paraID":201,"paraName":"TransGain","value":35.0,"unit":"dB"},
+							{"paraID":203,"paraName":"RecGain","value":55.0,"unit":"dB"},
+							{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+							{"paraID":209,"paraName":"txDepointingLoss","value":1.5,"unit":"dB"},
+							{"paraID":210,"paraName":"rxDepointingLoss","value":2.0,"unit":"dB"},
+							{"paraName":"heightClearance","value":35.0,"unit":"km"}
+				]
+			},
+			{	"linkID":15,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":0,"srcID":2},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28874},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"minEleAngle","value":30.0,"unit":"deg"}
+				]
+			},
+			{	"linkID":16,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":0,"srcID":2},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28190},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"minEleAngle","value":30.0,"unit":"deg"}
+				]
+			},
+
+			{	"linkID":17,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":39741},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28474},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":18,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":28474},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":27704},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":19,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":27704},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":37753},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":20,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":37753},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":39741},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":21,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":24876},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":32260},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":22,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":32260},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":41328},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":23,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":41328},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":26605},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":24,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":40105},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":24876},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":25,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":40534},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":27663},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":26,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":27663},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":26407},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":27,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":26407},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":29601},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":28,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":29601},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":40534},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":29,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":35752},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":26360},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":30,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":26360},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28129},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":31,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":28129},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":41019},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":32,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":41019},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":40294},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":33,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":35752},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":40294},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":34,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":28361},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":40105},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			},
+			{	"linkID":35,
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":1,"srcID":26605},
+						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28361},
+						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
+						{"paraName":"heightClearance","value":30.0,"unit":"km"}
+				]
+			}
+
+		],
+		"scnAppDef":[
+			{"AppName":"app1", "srcType":1, "srcID":39533, "destType":1,"destID":38833, "AppType":"TCP",
+				"Config":[{"paraName":"srcPort","num":10020},
+						  {"paraName":"destPort","num":10021},
+						  {"paraName":"tafficModel","num":2},
+						  {"paraName":"tafficModelpara1","num":1},
+						  {"paraName":"tafficModelpara2","num":111},
+						  {"paraName":"tafficModelpara3","num":1}
+						 ]
+			},
+			{"AppName":"app2", "srcType":1, "srcID":38833, "destType":1,"destID":39533, "AppType":"TCP",
+				"Config":[{"paraName":"srcPort","num":9020},
+						  {"paraName":"destPort","num":9021},
+						  {"paraName":"tafficModel","num":1},
+						  {"paraName":"tafficModelpara1","num":1},
+						  {"paraName":"tafficModelpara2","num":222},
+						  {"paraName":"tafficModelpara3","num":555}
+						 ]
+			}
+		]
+
+	}
+}
