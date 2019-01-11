@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 from mininet.net import Mininet
-from mininet.node import OVSKernelAP
 from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.log import setLogLevel, info
@@ -36,16 +35,10 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     lnks = paras['SatcomScnDef']['scnLinkDef']
     # print sats, usrs, lnks
 
-    net = Mininet(controller=None, accessPoint=OVSKernelAP, link=TCLink, autoSetMacs=True)
+    net = Mininet(controller=None, link=TCLink, autoSetMacs=True)
 
     print "*** Creating nodes ***"
     nodes = {}
-
-    node = net.addHost('h1')
-    nodes['h1'] = node
-    node = net.addSwitch('s1')
-    nodes['s1'] = node
-    net.addLink(nodes['h1'], nodes['s1'])
 
     for sat,i in zip(sats,range(1,len(sats)+1)):
         sat_name = 'h'+str(i)
@@ -127,8 +120,8 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     #         delay[node_sta.name+'-'+node_lte.name] = float(lteDelay)
 
 
-    print "*** Building the graph of the simulation ***"
-    net.plotGraph(max_x=260, max_y=220)
+    # print "*** Building the graph of the simulation ***"
+    # net.plotGraph(max_x=260, max_y=220)
 
     print "*** Starting network simulation ***"
     net.start()
