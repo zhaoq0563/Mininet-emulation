@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from mininet.net import Mininet
+from mininet.node import Controller
 from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.log import setLogLevel, info
@@ -19,7 +20,7 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     #     call(["sudo", "sysctl", "-w", "net.mptcp.mptcp_scheduler=default"])
     #     call(["sudo", "sysctl", "-w", "net.ipv4.tcp_congestion_control=lia"])
 
-    print "*** Loading the parameters for simulation ***\n"
+    print("*** Loading the parameters for simulation ***\n")
 
     mStart = 0
     mEnd = 180
@@ -35,15 +36,15 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     lnks = paras['SatcomScnDef']['scnLinkDef']
     # print sats, usrs, lnks
 
-    net = Mininet(controller=None, link=TCLink, autoSetMacs=True)
+    net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
 
-    print "*** Creating nodes ***"
+    print("*** Creating nodes ***")
     nodes = {}
 
     for sat,i in zip(sats,range(1,len(sats)+1)):
         sat_name = 'h'+str(i)
         sat_id = str(sat['satID'])+'-sat'
-        print sat_name, sat_id
+        print(sat_name, sat_id)
         swi_name = 's'+str(i)
         swi_id = sat['satID']
         node = net.addHost(sat_name, position=str(50+(5*i))+',50,0')
@@ -54,18 +55,26 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
 
     for usr,i in zip(usrs,range(len(sats)+1,len(sats)+len(usrs))):
         usr_name = 'h'+str(i)
-        usr_id = usr['ID']
-        print usr_name, usr_id
+        usr_id = str(usr['ID'])+'-usr'
+        print(usr_name, usr_id)
+        swi_name = 's' + str(i)
+        swi_id = usr['ID']
         node = net.addHost(usr_name, position=str(50+(30*i))+',150,0')
         nodes[usr_id] = node
+        node = net.addSwitch(swi_name)
+        nodes[swi_id] = node
+        net.addLink(nodes[usr_id], nodes[swi_id])
 
     for lnk in lnks:
         src_id = lnk['Config'][0]['srcID']
         des_id = lnk['Config'][1]['destID']
-        print src_id, des_id
+        print(src_id, des_id)
         node_s = nodes[src_id]
         node_d = nodes[des_id]
         net.addLink(node_s, node_d)
+
+    node = net.addController('c0')
+    nodes['c0'] = node
 
     # '''Switch'''
     # numOfSwitch = numOfAp+numOfLte*2+1                        # last one is for server h1
@@ -123,7 +132,7 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     # print "*** Building the graph of the simulation ***"
     # net.plotGraph(max_x=260, max_y=220)
 
-    print "*** Starting network simulation ***"
+    print("*** Starting network simulation ***")
     net.start()
 
     CLI(net)
@@ -223,23 +232,23 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     # o.write(','.join(str(i) for i in delay_l))
     # o.close()
 
-    print "*** Stopping network ***"
+    print("*** Stopping network ***")
     net.stop()
 
 
 if __name__ == '__main__':
-    print "*** *** *** *** *** *** *** *** *** *** ***"
-    print "***                                     ***"
-    print "***  Welcome to the Mininet simulation  ***"
-    print "***                                     ***"
-    print "*** *** *** *** *** *** *** *** *** *** ***\n"
+    print("*** *** *** *** *** *** *** *** *** *** ***")
+    print("***                                     ***")
+    print("***  Welcome to the Mininet simulation  ***")
+    print("***                                     ***")
+    print("*** *** *** *** *** *** *** *** *** *** ***\n")
     while True:
-        print "--- Available configuration: "
+        print("--- Available configuration: ")
         for config in os.listdir('./'):
             if '.json' in config:
-                print config.rstrip('.json')
+                print(config.rstrip('.json'))
         configName = raw_input('--- Please select the configuration file: ')
-        print configName+'.json'
+        print(configName+'.json')
         if os.path.exists('./'+configName+'.json'):
             break
 

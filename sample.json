@@ -80,36 +80,6 @@
 				           {"paraName":"inLinkMax","value":4.0},
 						   {"paraName":"netIfnum","value":10.0}
 						 ]
-			},
-			{	"name":"Ascension Island",
-				"ID":4,
-				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":-14.3559},
-						   {"paraID":2, "paraName":"LatiDeg", "value":39.75},
-						   {"paraID":3, "paraName":"AltitudeM", "value":1250.0},
-						   {"paraName":"outLinkMax","value":4.0},
-				           {"paraName":"inLinkMax","value":4.0},
-						   {"paraName":"netIfnum","value":10.0}
-						 ]
-			},
-			{	"name":"Diego Garcia",
-				"ID":5,
-				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":51.5},
-						   {"paraID":2, "paraName":"LatiDeg", "value":-7.3195},
-						   {"paraID":3, "paraName":"AltitudeM", "value":250.0},
-						   {"paraName":"outLinkMax","value":4.0},
-				           {"paraName":"inLinkMax","value":4.0},
-						   {"paraName":"netIfnum","value":10.0}
-						 ]
-			},
-			{	"name":"DKwajalein Island",
-				"ID":6,
-				"Config":[ {"paraID":1, "paraName":"longiDeg", "value":167.4243},
-						   {"paraID":2, "paraName":"LatiDeg", "value":9.1898},
-						   {"paraID":3, "paraName":"AltitudeM", "value":250.0},
-						   {"paraName":"outLinkMax","value":4.0},
-				           {"paraName":"inLinkMax","value":4.0},
-						   {"paraName":"netIfnum","value":10.0}
-						 ]
 			}
 		],
 		"scnLinkDef":[
