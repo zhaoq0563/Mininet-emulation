@@ -13,8 +13,7 @@
 					{"Type":"throughputChange","Time":0.0,"para1":"20.0Mbps","para2":"1223.9","para3":"1223.9"},
 					{"Type":"throughputChange","Time": 10.0,"para1":"10.0Mbps","para2":"1223.9","para3":"1223.9"}
 				  ]
-			}   
-			
+			},
 			{"srcType":1,"srcID":41019,"destType":1,"destID":40294,
 				  "actionlist":[
 					{"Type":"removeLink","Time":1.0,"para1":"20.0Mbps","para2":"1223.9","para3":"1223.9"},
@@ -22,8 +21,7 @@
 				  ]
 			}  
 				  
-		]
-						    
+		],
 		"scnappEvnt":[
 			{"AppName":"app1",
 				"actionlist":[

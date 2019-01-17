@@ -10,31 +10,23 @@ from subprocess import call
 import time, random, os, json, sys
 
 
+def parseAction(sid, did, act, actList):
+    time = str(act['Time'])
+    if act['Type'] == 'propDelayChange':
+        actString = 'net.linksBetween(nodes['+sid+'],nodes['+did+'])'
+
+
 """Main function of the simulation"""
 
-def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
-
-    # call(["sudo", "sysctl", "-w", "net.mptcp.mptcp_enabled="+str(mptcpEnabled)])
-    # if not mptcpEnabled:
-    #     call(["sudo", "modprobe", "mptcp_coupled"])
-    #     call(["sudo", "sysctl", "-w", "net.mptcp.mptcp_scheduler=default"])
-    #     call(["sudo", "sysctl", "-w", "net.ipv4.tcp_congestion_control=lia"])
+def mobileNet(name, configFile):
 
     print("*** Loading the parameters for simulation ***\n")
-
-    mStart = 0
-    mEnd = 180
-    acMode = 'ssf'
-    propModel = 'logDistance'
-    exponent = 4
-    folderName = 'pcap_'+name
 
     with open(configFile, 'r') as read_file:
         paras = json.load(read_file)
     sats = paras['SatcomScnDef']['sateDef']
     usrs = paras['SatcomScnDef']['userDef']
     lnks = paras['SatcomScnDef']['scnLinkDef']
-    # print sats, usrs, lnks
 
     net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
 
@@ -65,6 +57,7 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
         nodes[swi_id] = node
         net.addLink(nodes[usr_id], nodes[swi_id])
 
+    tcInfo = {}
     for lnk in lnks:
         src_id = lnk['Config'][0]['srcID']
         des_id = lnk['Config'][1]['destID']
@@ -76,64 +69,24 @@ def mobileNet(name, mptcpEnabled, fdmEnabled, configFile):
     node = net.addController('c0')
     nodes['c0'] = node
 
-    # '''Switch'''
-    # numOfSwitch = numOfAp+numOfLte*2+1                        # last one is for server h1
-    # for i in range(1, numOfSwitch+1):
-    #     switch_name = 's'+str(i)
-    #     node = net.addSwitch(switch_name)
-    #     nodes[switch_name] = node
-    #     if i>numOfAp+numOfLte and i!=numOfSwitch:
-    #         nets.append(switch_name)
-
-    # '''Access Point'''
-    # for i in range(1, numOfAp+1):
-    #     ap_name = 'ap'+str(i)
-    #     ap_ssid = ap_name+'_ssid'
-    #     ap_mode = 'g'
-    #     ap_chan = '1'
-    #     ap_range = '40'
-
-    #     if replay==1:
-    #         ap_pos = config.readline().strip('\n')
-    #     else:
-    #         ap_pos = '100,70,0'
-    #         config.write(ap_pos+'\n')
-
-    #     paramOfAp[ap_name] = [ap_pos, ap_range]
-    #     node = net.addAccessPoint(ap_name, ssid=ap_ssid, mode=ap_mode, channel=ap_chan, position=ap_pos, range=ap_range)
-    #     nets.append(ap_name)
-    #     nodes[ap_name] = node
-
-    # print "*** Associating and Creating links ***"
-    # '''Backhaul links between switches'''
-    # for i in range(1, numOfAp+numOfLte+1):
-    #     node_u = nodes['s'+str(numOfSwitch)]
-    #     node_d = nodes['s'+str(i)]
-    #     net.addLink(node_d, node_u, bw=float(backhaulBW[i-1]), delay=str(backhaulDelay[i-1])+'ms', loss=float(backhaulLoss[i-1]))
-    #     capacity['s'+str(i)+'-s'+str(numOfSwitch)] = float(backhaulBW[i-1])
-    #     delay['s'+str(i)+'-s'+str(numOfSwitch)] = float(backhaulDelay[i-1])
-
-    # '''Link between server and switch'''
-    # node_h = nodes['h1']
-    # node_d = nodes['s'+str(numOfSwitch)]
-    # net.addLink(node_d, node_h)
-
-    # '''Links between stations and LTE switch'''
-    # for i in range(1, numOfSPSta+numOfMPSta+1):
-    #     for j in range(numOfAp+numOfLte+1, numOfSwitch):
-    #         node_lte = nodes['s'+str(j)]
-    #         node_sta = nodes['sta'+str(i)]
-    #         if lteLinks[i-1][j-numOfAp-numOfLte-1]:
-    #             net.addLink(node_sta, node_lte, bw=float(lteBW), delay=str(lteDelay)+'ms', loss=float(lteLoss))
-    #         capacity[node_sta.name+'-'+node_lte.name] = float(lteBW)
-    #         delay[node_sta.name+'-'+node_lte.name] = float(lteDelay)
-
-
-    # print "*** Building the graph of the simulation ***"
-    # net.plotGraph(max_x=260, max_y=220)
+    print("*** Loading event into Controller ***")
+    with open('gpsSCNSimulationscripv2t.json', 'r') as read_file:
+        events = json.load(read_file)
+    linkEvents = events['SimScript']['scnLinkEvnt']
+    appEvents = events['SimScript']['scnappEvnt']
+    linkactList = {}
+    for evt in linkEvents:
+        for act in evt['actionlist']:
+            linkactList.setdefault(str(act['Time']), []).append([str(evt['srcID']), str(evt['destID']), str(act['Type']), str(act['para1'])])
+    appactList = {}
+    for evt in appEvents:
+        for act in evt['actionlist']:
+            appactList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
 
     print("*** Starting network simulation ***")
     net.start()
+
+    controllerLogic(net, nodes, tcInfo, linkactList, appactList)
 
     CLI(net)
 
@@ -252,25 +205,11 @@ if __name__ == '__main__':
         if os.path.exists('./'+configName+'.json'):
             break
 
-    # while True:
-    #     fdmEnabled = raw_input('--- Enable FDM? (Default YES): ')
-    #     if fdmEnabled == 'no' or fdmEnabled == 'n' or fdmEnabled == '0':
-    #         fdmEnabled = 0
-    #         break
-    #     elif fdmEnabled == 'y' or fdmEnabled == 'yes' or fdmEnabled == '1' or fdmEnabled == '':
-    #         fdmEnabled = 1
-    #         break
-
     while True:
         name = raw_input('--- Please name this testing: ')
         break
 
     setLogLevel('info')
 
-    # if fdmEnabled==0:
-    #     mobileNet(name+'-mptcp', 1, 0, 'i', 0, configName + '.json')
-    # else:
-    #     mobileNet(name+'-fdm', 1, 1, 'i', 0, configName + '.json')
-
-    mobileNet(name, 1, 0, configName + '.json')
+    mobileNet(name, configName + '.json')
 
