@@ -7,13 +7,50 @@ from mininet.cli import CLI
 from mininet.log import setLogLevel, info
 
 from subprocess import call
-import time, random, os, json, sys
+import time, threading, os, json, collections, sys
 
 
-def parseAction(sid, did, act, actList):
-    time = str(act['Time'])
-    if act['Type'] == 'propDelayChange':
-        actString = 'net.linksBetween(nodes['+sid+'],nodes['+did+'])'
+def controllerLogic(net, nodes, tcInfo, actList):
+
+    print("### Controlling logic is running ###\n")
+    lastTime = 0
+    for acts in actList:
+        # Sleeping until the starting point of next series of actions
+        time.sleep(float(acts[0])-lastTime)
+        # Interpreting the action one by one
+        for act in acts[1]:
+            # Link action
+            if len(act) == 4:
+                # Locating the current link info
+                curLink = str(act[0])+'->'+str(act[1])
+
+                if act[2] == 'removeLink':
+                    del tcInfo[curLink]
+                    net.delLinkBetween(nodes[str(act[0])], nodes[str(act[1])])
+                else:
+                    # Adding corresponding parameters for new link
+                    if act[2] == 'establishLink':
+                        tcInfo.setdefault(curLink, {})['bw'] = float(act[3].strip('Mbps'))
+                    # Changing corresponding parameters of old link
+                    else:
+                        net.delLinkBetween(nodes[str(act[0])], nodes[str(act[1])])
+                        if act[2] == 'throughputChange':
+                            tcInfo[curLink]['bw'] = float(act[3].strip('Mbps'))
+                        elif act[2] == 'propDelayChange':
+                            tcInfo[curLink]['delay'] = act[3]
+                    # Adding new link
+                    addLinkCmd = 'net.addLink(nodes["'+str(act[0])+'"],nodes["'+str(act[1])+'"],'
+                    for k,v in tcInfo[curLink].iteritems():
+                        value = "'"+str(v)+"'" if (str(k)=='delay') else str(v)
+                        addLinkCmd += str(k)+'='+value+','
+                    eval(addLinkCmd.strip(',')+')')
+
+            # App action
+            # elif len(act) == 3:
+
+        # Updating last timestamp
+        lastTime = float(acts[0])
+
 
 
 """Main function of the simulation"""
@@ -21,7 +58,6 @@ def parseAction(sid, did, act, actList):
 def mobileNet(name, configFile):
 
     print("*** Loading the parameters for simulation ***\n")
-
     with open(configFile, 'r') as read_file:
         paras = json.load(read_file)
     sats = paras['SatcomScnDef']['sateDef']
@@ -38,7 +74,7 @@ def mobileNet(name, configFile):
         sat_id = str(sat['satID'])+'-sat'
         print(sat_name, sat_id)
         swi_name = 's'+str(i)
-        swi_id = sat['satID']
+        swi_id = '1'+str(sat['satID'])
         node = net.addHost(sat_name, position=str(50+(5*i))+',50,0')
         nodes[sat_id] = node
         node = net.addSwitch(swi_name)
@@ -50,7 +86,7 @@ def mobileNet(name, configFile):
         usr_id = str(usr['ID'])+'-usr'
         print(usr_name, usr_id)
         swi_name = 's' + str(i)
-        swi_id = usr['ID']
+        swi_id = '0'+str(usr['ID'])
         node = net.addHost(usr_name, position=str(50+(30*i))+',150,0')
         nodes[usr_id] = node
         node = net.addSwitch(swi_name)
@@ -59,12 +95,14 @@ def mobileNet(name, configFile):
 
     tcInfo = {}
     for lnk in lnks:
-        src_id = lnk['Config'][0]['srcID']
-        des_id = lnk['Config'][1]['destID']
+        src_id = str(lnk['Config'][0]['srcType'])+str(lnk['Config'][0]['srcID'])
+        des_id = str(lnk['Config'][1]['destType'])+str(lnk['Config'][1]['destID'])
         print(src_id, des_id)
         node_s = nodes[src_id]
         node_d = nodes[des_id]
         net.addLink(node_s, node_d)
+        tcInfo.setdefault(src_id+'->'+des_id, {})
+        # net.delLinkBetween(node_s, node_d)
 
     node = net.addController('c0')
     nodes['c0'] = node
@@ -74,21 +112,31 @@ def mobileNet(name, configFile):
         events = json.load(read_file)
     linkEvents = events['SimScript']['scnLinkEvnt']
     appEvents = events['SimScript']['scnappEvnt']
+    actList = {}
     linkactList = {}
     for evt in linkEvents:
         for act in evt['actionlist']:
-            linkactList.setdefault(str(act['Time']), []).append([str(evt['srcID']), str(evt['destID']), str(act['Type']), str(act['para1'])])
+            actList.setdefault(str(act['Time']), []).append([str(evt['srcType'])+str(evt['srcID']), str(evt['destType'])+str(evt['destID']), str(act['Type']), str(act['para1'])])
     appactList = {}
     for evt in appEvents:
         for act in evt['actionlist']:
-            appactList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
+            actList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
+    actList = sorted(actList.items(), key=lambda x:float(x[0]))
+    print actList
+
+    # os._exit(0)
 
     print("*** Starting network simulation ***")
+    # mininet_thread = threading.Thread(target=net.start(), name = 'simulationLogic')
     net.start()
 
-    controllerLogic(net, nodes, tcInfo, linkactList, appactList)
+    control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
+    control_thread.start()
+    control_thread.join()
 
-    CLI(net)
+    # controllerLogic(net, nodes, tcInfo, actList)
+
+    # CLI(net)
 
     # print "*** Addressing for station ***"
     # for i in range(1, numOfSPSta+numOfMPSta+1):

@@ -1,20 +1,20 @@
 {	
 	"SimScript" : {
 		"scnLinkEvnt":[
-			{"srcType":1,"srcID":39533,"destType":1,"destID":38833,
+			{"srcType":0,"srcID":2,"destType":1,"destID":28874,
 				  "actionlist":[
 				  	{"Type":"propDelayChange","Time": 0.0,"para1":"70.0ms","para2":"200.0","para3":"1223.9"},
 					{"Type":"throughputChange","Time":0.0,"para1":"15.0Mbps","para2":"1223.9","para3":"1223.9"},
 					{"Type":"throughputChange","Time":15.0,"para1":"10.0Mbps","para2":"1223.9","para3":"1223.9"}
 				  ]	
 			},
-			{"srcType":1,"srcID":38833,"destType":1,"destID":39533,
+			{"srcType":0,"srcID":2,"destType":1,"destID":28190,
 				  "actionlist":[
 					{"Type":"throughputChange","Time":0.0,"para1":"20.0Mbps","para2":"1223.9","para3":"1223.9"},
 					{"Type":"throughputChange","Time": 10.0,"para1":"10.0Mbps","para2":"1223.9","para3":"1223.9"}
 				  ]
 			},
-			{"srcType":1,"srcID":41019,"destType":1,"destID":40294,
+			{"srcType":0,"srcID":2,"destType":1,"destID":28190,
 				  "actionlist":[
 					{"Type":"removeLink","Time":1.0,"para1":"20.0Mbps","para2":"1223.9","para3":"1223.9"},
 					{"Type":"establishLink","Time": 5.0,"para1":"10.0Mbps","para2":"1223.9","para3":"1223.9"}
