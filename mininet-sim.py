@@ -10,6 +10,8 @@ from subprocess import call
 import time, threading, os, json, collections, sys
 
 
+"""Controller function"""
+
 def controllerLogic(net, nodes, tcInfo, actList):
 
     print("### Controlling logic is running ###\n")
@@ -58,22 +60,29 @@ def controllerLogic(net, nodes, tcInfo, actList):
 def mobileNet(name, configFile):
 
     print("*** Loading the parameters for simulation ***\n")
+    # Parsing the JSON file
     with open(configFile, 'r') as read_file:
         paras = json.load(read_file)
     sats = paras['SatcomScnDef']['sateDef']
     usrs = paras['SatcomScnDef']['userDef']
     lnks = paras['SatcomScnDef']['scnLinkDef']
 
+    # Initializing the Mininet network
     net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
 
     print("*** Creating nodes ***")
+    # Storing all nodes objects
     nodes = {}
+    # Storing all links information
+    tcInfo = {}
 
+    # Creating satellite nodes: each satellite is constructed with one host and one switch
     for sat,i in zip(sats,range(1,len(sats)+1)):
         sat_name = 'h'+str(i)
         sat_id = str(sat['satID'])+'-sat'
         print(sat_name, sat_id)
         swi_name = 's'+str(i)
+        # Type id for satellite is 1
         swi_id = '1'+str(sat['satID'])
         node = net.addHost(sat_name, position=str(50+(5*i))+',50,0')
         nodes[sat_id] = node
@@ -81,11 +90,13 @@ def mobileNet(name, configFile):
         nodes[swi_id] = node
         net.addLink(nodes[sat_id], nodes[swi_id])
 
+    # Creating user nodes: each user is constructed with one host and one switch
     for usr,i in zip(usrs,range(len(sats)+1,len(sats)+len(usrs))):
         usr_name = 'h'+str(i)
         usr_id = str(usr['ID'])+'-usr'
         print(usr_name, usr_id)
         swi_name = 's' + str(i)
+        # Type id for user is 0
         swi_id = '0'+str(usr['ID'])
         node = net.addHost(usr_name, position=str(50+(30*i))+',150,0')
         nodes[usr_id] = node
@@ -93,7 +104,7 @@ def mobileNet(name, configFile):
         nodes[swi_id] = node
         net.addLink(nodes[usr_id], nodes[swi_id])
 
-    tcInfo = {}
+    # Creating links
     for lnk in lnks:
         src_id = str(lnk['Config'][0]['srcType'])+str(lnk['Config'][0]['srcID'])
         des_id = str(lnk['Config'][1]['destType'])+str(lnk['Config'][1]['destID'])
@@ -102,39 +113,39 @@ def mobileNet(name, configFile):
         node_d = nodes[des_id]
         net.addLink(node_s, node_d)
         tcInfo.setdefault(src_id+'->'+des_id, {})
-        # net.delLinkBetween(node_s, node_d)
 
+    # Creating default controller to the network
     node = net.addController('c0')
     nodes['c0'] = node
 
     print("*** Loading event into Controller ***")
+    # Parsing the JSON file
     with open('gpsSCNSimulationscripv2t.json', 'r') as read_file:
         events = json.load(read_file)
     linkEvents = events['SimScript']['scnLinkEvnt']
     appEvents = events['SimScript']['scnappEvnt']
+    # Storing all the events info
     actList = {}
-    linkactList = {}
+    # Link event: format [time, [source, destination, event type, parameter]]
     for evt in linkEvents:
         for act in evt['actionlist']:
             actList.setdefault(str(act['Time']), []).append([str(evt['srcType'])+str(evt['srcID']), str(evt['destType'])+str(evt['destID']), str(act['Type']), str(act['para1'])])
-    appactList = {}
+    # Application event: format [time, [application name, event type, parameter]]
     for evt in appEvents:
         for act in evt['actionlist']:
             actList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
+    # Sorting the event list based on the timestamp
     actList = sorted(actList.items(), key=lambda x:float(x[0]))
     print actList
 
-    # os._exit(0)
-
     print("*** Starting network simulation ***")
-    # mininet_thread = threading.Thread(target=net.start(), name = 'simulationLogic')
+    # Starting the Mininet simulation network
     net.start()
 
+    # Creating and starting the controller logic thread
     control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
     control_thread.start()
     control_thread.join()
-
-    # controllerLogic(net, nodes, tcInfo, actList)
 
     # CLI(net)
 
