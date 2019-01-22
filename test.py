@@ -7,20 +7,36 @@ from mininet.cli import CLI
 from mininet.log import setLogLevel
 
 from subprocess import call
-import time, os, json
+import os, time, threading
 
+""" Application related function """
 
-"""Main function of the simulation"""
+def sendingIperfTraffic(nodes, name):
+    print "*** Starting iPerf Server on host ***"
+    server = nodes['h2']
+    server.cmd('iperf -s &')
+    if not os.path.exists(name):
+        os.mkdir(name)
+        user = os.getenv('SUDO_USER')
+        os.system('sudo chown -R '+user+':'+user+' '+name)
+    server.cmd('tcpdump -i h2-eth0 -w '+name+'/server.pcap &')
 
-def mobileNet(name, configFile):
+    print "*** Starting iPerf Clients on stations ***"
+    time.sleep(1)
+    client = nodes['h1']
+    client.cmdPrint('iperf -c 10.0.0.2 -t 30')
 
-    print("*** Loading the parameters for simulation ***\n")
+""" Main function of the simulation """
 
-    # with open(configFile, 'r') as read_file:
-    #     paras = json.load(read_file)
-    # sats = paras['SatcomScnDef']['sateDef']
-    # usrs = paras['SatcomScnDef']['userDef']
-    # lnks = paras['SatcomScnDef']['scnLinkDef']
+def mobileNet(name, conges, delay):
+
+    print("*** System configuration ***\n")
+    # Configuring the congestion control
+    if conges == 'bbr':
+        os.system('sudo sysctl -w net.core.default_qdisc=fq')
+    else:
+        os.system('sudo sysctl -w net.core.default_qdisc=pfifo_fast')
+    os.system('sudo sysctl -w net.ipv4.tcp_congestion_control='+conges)
 
     net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
 
@@ -42,42 +58,9 @@ def mobileNet(name, configFile):
 
     net.addLink(nodes['h1'], nodes['s1'])
     net.addLink(nodes['s1'], nodes['s2'])
-    net.addLink(nodes['s2'], nodes['s3'])
+    net.addLink(nodes['s2'], nodes['s3'], bw=10, delay=str(delay)+'ms', loss=0.0001)
     net.addLink(nodes['s3'], nodes['s4'])
     net.addLink(nodes['s4'], nodes['h2'])
-
-
-    # for sat,i in zip(sats,range(1,len(sats)+1)):
-    #     sat_name = 'h'+str(i)
-    #     sat_id = str(sat['satID'])+'-sat'
-    #     print(sat_name, sat_id)
-    #     swi_name = 's'+str(i)
-    #     swi_id = sat['satID']
-    #     node = net.addHost(sat_name, position=str(50+(5*i))+',50,0')
-    #     nodes[sat_id] = node
-    #     node = net.addSwitch(swi_name)
-    #     nodes[swi_id] = node
-    #     net.addLink(nodes[sat_id], nodes[swi_id])
-    #
-    # for usr,i in zip(usrs,range(len(sats)+1,len(sats)+len(usrs))):
-    #     usr_name = 'h'+str(i)
-    #     usr_id = str(usr['ID'])+'-usr'
-    #     print(usr_name, usr_id)
-    #     swi_name = 's' + str(i)
-    #     swi_id = usr['ID']
-    #     node = net.addHost(usr_name, position=str(50+(30*i))+',150,0')
-    #     nodes[usr_id] = node
-    #     node = net.addSwitch(swi_name)
-    #     nodes[swi_id] = node
-    #     net.addLink(nodes[usr_id], nodes[swi_id])
-    #
-    # for lnk in lnks:
-    #     src_id = lnk['Config'][0]['srcID']
-    #     des_id = lnk['Config'][1]['destID']
-    #     print(src_id, des_id)
-    #     node_s = nodes[src_id]
-    #     node_d = nodes[des_id]
-    #     net.addLink(node_s, node_d)
 
     node = net.addController('c0')
     nodes['c0'] = node
@@ -85,7 +68,12 @@ def mobileNet(name, configFile):
     print("*** Starting network simulation ***")
     net.start()
 
-    CLI(net)
+    # CLI(net)
+
+    print "*** Starting to generate the traffic ***"
+    traffic_thread = threading.Thread(target=sendingIperfTraffic, args=(nodes, name))
+    traffic_thread.start()
+    traffic_thread.join()
 
     print("*** Stopping network ***")
     net.stop()
@@ -98,14 +86,15 @@ if __name__ == '__main__':
     print("***                                     ***")
     print("*** *** *** *** *** *** *** *** *** *** ***\n")
     while True:
-        print("--- Available configuration: ")
-        for config in os.listdir('./'):
-            if '.json' in config:
-                print(config.rstrip('.json'))
-        configName = raw_input('--- Please select the configuration file: ')
-        print(configName+'.json')
-        if os.path.exists('./'+configName+'.json'):
+        print("--- Available congestion control: ")
+        print("reno\tcubic\tbbr")
+        conges = raw_input('--- Please select: ')
+        if conges == 'reno' or conges == 'cubic' or conges == 'bbr':
             break
+
+    while True:
+        delay = raw_input('--- Please input the delay (ms): ')
+        break
 
     while True:
         name = raw_input('--- Please name this testing: ')
@@ -113,5 +102,5 @@ if __name__ == '__main__':
 
     setLogLevel('info')
 
-    mobileNet(name, configName + '.json')
+    mobileNet('results/'+name, conges, delay)
 
