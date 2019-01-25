@@ -2,7 +2,7 @@
 
 import os
 
-cur_path = 'results/'
+cur_path = 'results/0.0001/'
 for i in os.listdir(cur_path):
     pcap_file = cur_path+i+'/server.pcap'
     out_file = cur_path+i+'/res.stat'
@@ -20,4 +20,5 @@ for i in os.listdir(cur_path):
     f = open(out_file, 'a')
     f.write('\n\n'+str(throughput/1000000)+'\n\n'+str(delay))
     f.close()
+    print i+"\t"+str(throughput/1000000)
 

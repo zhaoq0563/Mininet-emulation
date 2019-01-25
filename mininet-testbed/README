@@ -1,0 +1,17 @@
+======================
+Directory organization
+======================
+
+configs : containing all topology and event related JSON files
+
+mininet-sim.py : the main script for the emulation
+
+
+
+
+=============
+Testbed usage
+=============
+
+To lunch a new emulation process, use the command 'sudo python mininet-sim.py' and then follow the instructions shown on
+the console.

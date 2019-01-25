@@ -6,29 +6,29 @@ from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.log import setLogLevel
 
-from subprocess import call
 import os, time, threading
 
 """ Application related function """
 
-def sendingIperfTraffic(nodes, name):
+def sendingIperfTraffic(nodes, loc):
     print "*** Starting iPerf Server on host ***"
     server = nodes['h2']
     server.cmd('iperf -s &')
-    if not os.path.exists(name):
-        os.mkdir(name)
+    if not os.path.exists(loc):
+        os.mkdir(loc)
         user = os.getenv('SUDO_USER')
-        os.system('sudo chown -R '+user+':'+user+' '+name)
-    server.cmd('tcpdump -i h2-eth0 -w '+name+'/server.pcap &')
+        os.system('sudo chown -R '+user+':'+user+' '+loc)
+    server.cmd('tcpdump -i h2-eth0 -w '+loc+'/server.pcap &')
 
     print "*** Starting iPerf Clients on stations ***"
     time.sleep(1)
     client = nodes['h1']
-    client.cmdPrint('iperf -c 10.0.0.2 -t 30')
+    totalTime = 60
+    client.cmdPrint('iperf -c 10.0.0.2 -t '+str(totalTime))
 
 """ Main function of the simulation """
 
-def mobileNet(name, conges, delay):
+def mobileNet(loc, loss, conges, delay):
 
     print("*** System configuration ***\n")
     # Configuring the congestion control
@@ -58,7 +58,7 @@ def mobileNet(name, conges, delay):
 
     net.addLink(nodes['h1'], nodes['s1'])
     net.addLink(nodes['s1'], nodes['s2'])
-    net.addLink(nodes['s2'], nodes['s3'], bw=10, delay=str(delay)+'ms', loss=0.0001)
+    net.addLink(nodes['s2'], nodes['s3'], bw=10, delay=str(delay)+'ms', loss=float(loss)*100)
     net.addLink(nodes['s3'], nodes['s4'])
     net.addLink(nodes['s4'], nodes['h2'])
 
@@ -71,7 +71,7 @@ def mobileNet(name, conges, delay):
     # CLI(net)
 
     print "*** Starting to generate the traffic ***"
-    traffic_thread = threading.Thread(target=sendingIperfTraffic, args=(nodes, name))
+    traffic_thread = threading.Thread(target=sendingIperfTraffic, args=(nodes, loc))
     traffic_thread.start()
     traffic_thread.join()
 
@@ -96,11 +96,16 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    while True:
-        name = raw_input('--- Please name this testing: ')
-        break
+    loss = 0.0001
+    user = os.getenv('SUDO_USER')
+    if not os.path.exists('results'):
+        os.mkdir('results')
+        os.system('sudo chown -R ' + user + ':' + user + ' ' + 'results')
+    resLoc = 'results/'+str(loss)+'/'
+    if not os.path.exists(resLoc):
+        os.mkdir(resLoc)
+        os.system('sudo chown -R ' + user + ':' + user + ' ' + resLoc)
 
     setLogLevel('info')
-
-    mobileNet('results/'+name, conges, delay)
+    mobileNet(resLoc+conges[0:2]+delay, loss, conges, delay)
 

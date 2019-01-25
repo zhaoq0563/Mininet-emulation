@@ -120,7 +120,7 @@ def mobileNet(name, configFile):
 
     print("*** Loading event into Controller ***")
     # Parsing the JSON file
-    with open('gpsSCNSimulationscripv2t.json', 'r') as read_file:
+    with open('configs/gpsSCNSimulationscripv2t.json', 'r') as read_file:
         events = json.load(read_file)
     linkEvents = events['SimScript']['scnLinkEvnt']
     appEvents = events['SimScript']['scnappEvnt']
@@ -256,12 +256,12 @@ if __name__ == '__main__':
     print("*** *** *** *** *** *** *** *** *** *** ***\n")
     while True:
         print("--- Available configuration: ")
-        for config in os.listdir('./'):
+        for config in os.listdir('./configs/'):
             if '.json' in config:
                 print(config.rstrip('.json'))
         configName = raw_input('--- Please select the configuration file: ')
         print(configName+'.json')
-        if os.path.exists('./'+configName+'.json'):
+        if os.path.exists('./configs/'+configName+'.json'):
             break
 
     while True:
@@ -270,5 +270,5 @@ if __name__ == '__main__':
 
     setLogLevel('info')
 
-    mobileNet(name, configName + '.json')
+    mobileNet(name, 'configs/'+configName+'.json')
 
