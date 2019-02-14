@@ -23,7 +23,7 @@ def sendingIperfTraffic(nodes, loc):
     print "*** Starting iPerf Clients on stations ***"
     time.sleep(1)
     client = nodes['h1']
-    totalTime = 60
+    totalTime = 10
     client.cmdPrint('iperf -c 10.0.0.2 -t '+str(totalTime))
 
 """ Main function of the simulation """
@@ -59,6 +59,7 @@ def mobileNet(loc, loss, conges, delay):
     net.addLink(nodes['h1'], nodes['s1'])
     net.addLink(nodes['s1'], nodes['s2'])
     net.addLink(nodes['s2'], nodes['s3'], bw=10, delay=str(delay)+'ms', loss=float(loss)*100)
+    # net.addLink(nodes['s2'], nodes['s3'], bw=10)
     net.addLink(nodes['s3'], nodes['s4'])
     net.addLink(nodes['s4'], nodes['h2'])
 
@@ -68,7 +69,15 @@ def mobileNet(loc, loss, conges, delay):
     print("*** Starting network simulation ***")
     net.start()
 
-    # CLI(net)
+    print("*** Configuring virtual ports for VMs ***")
+    os.system('sudo ip tuntap add mode tap vport1')
+    os.system('sudo ip tuntap add mode tap vport2')
+    os.system('sudo ifconfig vport1 up')
+    os.system('sudo ifconfig vport2 up')
+    os.system('sudo ovs-vsctl add-port s1 vport1')
+    os.system('sudo ovs-vsctl add-port s4 vport2')
+
+    CLI(net)
 
     print "*** Starting to generate the traffic ***"
     traffic_thread = threading.Thread(target=sendingIperfTraffic, args=(nodes, loc))
@@ -76,7 +85,14 @@ def mobileNet(loc, loss, conges, delay):
     traffic_thread.join()
 
     print("*** Stopping network ***")
+    os.system('sudo ovs-vsctl del-port s1 vport1')
+    os.system('sudo ovs-vsctl del-port s4 vport2')
+    os.system('sudo ifconfig vport1 down')
+    os.system('sudo ifconfig vport2 down')
+    os.system('sudo ip link delete vport1')
+    os.system('sudo ip link delete vport2')
     net.stop()
+
 
 
 if __name__ == '__main__':
@@ -96,7 +112,7 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    loss = 0.0001
+    loss = 0.001
     user = os.getenv('SUDO_USER')
     if not os.path.exists('results'):
         os.mkdir('results')
