@@ -104,12 +104,12 @@ def mobileNet(loc, loss, conges, delay):
     os.system('sudo ovs-vsctl add-port s1 vport1')
     os.system('sudo ovs-vsctl add-port s2 vport2')
 
-    # CLI(net)
+    CLI(net)
 
     print "*** Starting to generate the traffic ***"
-    traffic_thread = threading.Thread(target=sendingIperfTraffic, args=(nodes, loc))
-    traffic_thread.start()
-    traffic_thread.join()
+    # traffic_thread = threading.Thread(target=sendingIperfTraffic, args=(nodes, loc))
+    # traffic_thread.start()
+    # traffic_thread.join()
 
     print("*** Stopping network ***")
     os.system('sudo ovs-vsctl del-port s1 vport1')

@@ -366,26 +366,26 @@ int main(int argc, char *argv[]) {
       nread = read_n(net_fd, buffer, ntohs(plength));
       do_debug("NET2TAP %lu: Read %d bytes from the network\n", net2tap, nread);
 
-      // /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */ 
-      // nwrite = cwrite(tap_fd, buffer, nread);
-      // do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
+      /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */ 
+      nwrite = cwrite(tap_fd, buffer, nread);
+      do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
 
       /* now we need to make sure the buffer will sending out the data to tun/tap interface in a fixed rate */
       /* clear the mybuffer to copy the buffer over */
-      memset(mybuffer[mycount],0,sizeof(mybuffer[mycount])/sizeof(char));
-      /* copy the buffer */
-      for(int i=0;i<nread;++i) mybuffer[mycount][i] = buffer[i];
-      /* store the length of current buffer/mybuffer */
-      mysize[mycount++] = nread;
-  	  /* send over the buffer based on specific criteria */
-      if(mycount > 2) {
-      	/* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
-      	for(int i=0;i<mycount;++i) {
-      		nwrite = cwrite(tap_fd, mybuffer[i], mysize[i]);
-      		do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
-      	}
-	    mycount = 0;
-      }
+     //  memset(mybuffer[mycount],0,sizeof(mybuffer[mycount])/sizeof(char));
+     //  /* copy the buffer */
+     //  for(int i=0;i<nread;++i) mybuffer[mycount][i] = buffer[i];
+     //  /* store the length of current buffer/mybuffer */
+     //  mysize[mycount++] = nread;
+  	  // /* send over the buffer based on specific criteria */
+     //  if(mycount > 2) {
+     //  	/* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
+     //  	for(int i=0;i<mycount;++i) {
+     //  		nwrite = cwrite(tap_fd, mybuffer[i], mysize[i]);
+     //  		do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
+     //  	}
+     //    mycount = 0;
+     //  }
     }
   }
   
