@@ -2,11 +2,11 @@
 
 import os
 
-cur_path = 'results/0.0001/'
+cur_path = 'results/1e-10/'
 for i in os.listdir(cur_path):
-    pcap_file = cur_path+i+'/server.pcap'
+    pcap_file = cur_path+i+'/client.pcap'
     out_file = cur_path+i+'/res.stat'
-    os.system('tshark -r ' + pcap_file + ' -qz \"io,stat,0,BYTES()ip.src==10.0.0.1,AVG(tcp.analysis.ack_rtt)tcp.analysis.ack_rtt&&ip.addr==10.0.0.1\" >' + out_file)
+    os.system('tshark -r ' + pcap_file + ' -qz \"io,stat,0,BYTES()ip.src==10.0.1.3,AVG(tcp.analysis.ack_rtt)tcp.analysis.ack_rtt&&ip.addr==10.0.1.3\" >' + out_file)
     f = open(out_file, 'r')
     for line in f:
         if line.startswith('|'):

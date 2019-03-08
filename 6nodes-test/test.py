@@ -23,7 +23,8 @@ def sendingIperfTraffic(nodes, loc):
     print "*** Starting iPerf Clients on stations ***"
     time.sleep(1)
     client = nodes['h1']
-    totalTime = 10
+    client.cmd('tcpdump -i h1-eth0 -w '+loc+'/client.pcap &')
+    totalTime = 120
     client.cmdPrint('iperf -c 10.0.0.2 -t '+str(totalTime))
 
 """ Main function of the simulation """
@@ -56,12 +57,12 @@ def mobileNet(loc, loss, conges, delay):
     node = net.addSwitch('s4')
     nodes['s4'] = node
 
-    net.addLink(nodes['h1'], nodes['s1'])
-    net.addLink(nodes['s1'], nodes['s2'])
+    net.addLink(nodes['h1'], nodes['s1'], bw=10)
+    net.addLink(nodes['s1'], nodes['s2'], bw=10)
     net.addLink(nodes['s2'], nodes['s3'], bw=10, delay=str(delay)+'ms', loss=float(loss)*100)
     # net.addLink(nodes['s2'], nodes['s3'], bw=10)
-    net.addLink(nodes['s3'], nodes['s4'])
-    net.addLink(nodes['s4'], nodes['h2'])
+    net.addLink(nodes['s3'], nodes['s4'], bw=10)
+    net.addLink(nodes['s4'], nodes['h2'], bw=10)
 
     node = net.addController('c0')
     nodes['c0'] = node
@@ -111,7 +112,7 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    loss = 0.001
+    loss = 0.01
     user = os.getenv('SUDO_USER')
     if not os.path.exists('results'):
         os.mkdir('results')

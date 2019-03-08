@@ -71,10 +71,10 @@ def mobileNet(loc, loss, conges, delay):
     nodes['s2'] = node
 
     net.addLink(nodes['r1'], nodes['r2'], intfName1='r1-eth0', intfName2='r2-eth0', bw=10, delay=str(delay)+'ms', loss=float(loss)*100)
-    net.addLink(nodes['s1'], nodes['r1'], intfName2='r1-eth1')
-    net.addLink(nodes['s2'], nodes['r2'], intfName2='r2-eth1')
-    net.addLink(nodes['h1'], nodes['s1'])
-    net.addLink(nodes['h2'], nodes['s2'])
+    net.addLink(nodes['s1'], nodes['r1'], intfName2='r1-eth1', bw=10)
+    net.addLink(nodes['s2'], nodes['r2'], intfName2='r2-eth1', bw=10)
+    net.addLink(nodes['h1'], nodes['s1'], bw=10)
+    net.addLink(nodes['h2'], nodes['s2'], bw=10)
 
     node = net.addController('c0')
     nodes['c0'] = node
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    loss = 0.001
+    loss = 0.0000000001
     user = os.getenv('SUDO_USER')
     if not os.path.exists('results'):
         os.mkdir('results')
