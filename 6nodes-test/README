@@ -1,16 +1,39 @@
-====================
-Testing instructions
-====================
+===========================
+Tunnel Testing instructions
+===========================
 
-1, In 'test.py', modify the loss rate at line 98
+No router topology
+------------------
 
-2, In 'test.py', modify the total running time of iPerf at line 26
+1, In 'test.py', modify the loss rate at line 115
+
+2, In 'test.py', modify the total running time of iPerf at line 27
 
 3, Run the simulation with 'sudo python test.py'
 
 4, The throughput results reported by iPerf will be shown on the console when finished
 
 5, Wireshark captured package are stored in 'results/' directory
+
+
+
+Router topology
+---------------
+
+1, In 'router.py', modify the loss rate of the tunnel link at line 142
+
+2, Run the simulation with 'sudo python router.py'
+
+3, Select the bridged network and the vports created for the virtual machines
+	- choose vport1 for VM1 and vport2 for VM2
+
+4, Launch the virtual machines
+
+5, Set the routes for the virtual machines
+	- On VM1, use command "sudo route add default gw 10.0.1.1 'network-interface'"
+	- On VM2, use command "sudo route add default gw 10.0.2.1 'network-interface'"
+
+6, VM1 and VM2 are now connected via the tunnel
 
 
 

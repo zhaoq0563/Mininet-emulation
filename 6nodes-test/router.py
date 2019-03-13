@@ -139,7 +139,7 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    loss = 0.0000000001
+    loss = 0.001
     user = os.getenv('SUDO_USER')
     if not os.path.exists('results'):
         os.mkdir('results')
