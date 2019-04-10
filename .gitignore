@@ -2,4 +2,5 @@
 venv/
 results/
 tunnel-test/results/
-simpletun/simpletun
+tunnel-forwarder/simpletun
+tunnel-forwarder/tunnel

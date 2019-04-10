@@ -130,9 +130,9 @@ if __name__ == '__main__':
     print("*** *** *** *** *** *** *** *** *** *** ***\n")
     while True:
         print("--- Available congestion control: ")
-        print("reno\tcubic\tbbr")
+        print("reno\tcubic\thybla\tbbr")
         conges = raw_input('--- Please select: ')
-        if conges == 'reno' or conges == 'cubic' or conges == 'bbr':
+        if conges == 'reno' or conges == 'cubic' or conges == 'hybla' or conges == 'bbr':
             break
 
     while True:
