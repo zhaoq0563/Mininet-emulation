@@ -38,8 +38,8 @@ Router topology
 4, Launch the virtual machines
 
 5, Set the routes for the virtual machines
-	- On VM1, use command "sudo route add default gw 10.0.1.1 'network-interface'"
-	- On VM2, use command "sudo route add default gw 10.0.2.1 'network-interface'"
+	- On VM1, use command "sudo route add default gw 10.0.1.1 dev 'network-interface'"
+	- On VM2, use command "sudo route add default gw 10.0.2.1 dev 'network-interface'"
 
 6, VM1 and VM2 are now connected via the tunnel
 

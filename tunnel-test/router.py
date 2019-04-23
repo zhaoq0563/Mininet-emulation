@@ -85,15 +85,15 @@ def mobileNet(loc, loss, conges, delay):
     # Addressing and routing
     r1, r2 = [nodes['r1'], nodes['r2']]
     r1.cmd('ip addr add 10.0.1.1/24 dev r1-eth1')
-    r1.cmd('../simpletun/netconfig.sh set tunt1 192.168.0.1/24')
+    r1.cmd('../tunnel-forwarder/netconfig.sh set tunt1 192.168.0.1/24')
     r1.cmd('ip route add 10.0.2.0/24 via 192.168.0.1')
     r2.cmd('ip addr add 10.0.2.1/24 dev r2-eth1')
-    r2.cmd('../simpletun/netconfig.sh set tunt2 192.168.0.2/24')
+    r2.cmd('../tunnel-forwarder/netconfig.sh set tunt2 192.168.0.2/24')
     r2.cmd('ip route add 10.0.1.0/24 via 192.168.0.2')
 
     # Launching the forwarder to initiate the tunnel
-    r2.cmd('../simpletun/simpletun -i tunt2 -s &')
-    r1.cmd('../simpletun/simpletun -i tunt1 -c 10.0.0.2 &')
+    # r2.cmd('../tunnel-forwarder/tunnel -i tunt2 -s &')
+    # r1.cmd('../tunnel-forwarder/tunnel -i tunt1 -c 10.0.0.2 &')
 
     # Adding tap interfaces for connecting VMs
     print("*** Configuring virtual ports for VMs ***")
@@ -139,7 +139,8 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    loss = 0.001
+    loss = 0.0000000001
+    # loss = 0.001
     user = os.getenv('SUDO_USER')
     if not os.path.exists('results'):
         os.mkdir('results')

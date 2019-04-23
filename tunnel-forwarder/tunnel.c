@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -26,6 +28,7 @@
 #define SERVER 1
 #define PORT 55555
 #define DUMMY_FLAG 65500
+#define VLEN 1
 
 int debug;
 char *progname;
@@ -93,6 +96,21 @@ int cread(int fd, char *buf, int n){
   int nread;
 
   if((nread=read(fd, buf, n)) < 0){
+    perror("Reading data");
+    exit(1);
+  }
+  return nread;
+}
+
+/**************************************************************************
+ * cread: read routine that checks for errors and exits if an error is    *
+ *        returned.                                                       *
+ **************************************************************************/
+int tread(int fd, struct mmsghdr *msgs, unsigned int n, int flags, struct timespec *timeout){
+  
+  int nread;
+
+  if((nread=recvmmsg(fd, msgs, n, flags, timeout)) < 0){
     perror("Reading data");
     exit(1);
   }
@@ -188,11 +206,13 @@ void* tapTonet_c(void* input)
   ts.tv_sec = 0;
 
   /* construct the dummy packet */
-  for (int i=0;i<1000;++i) dummy_packet[i] = 'F';
+  /* dummy packet size = 1 Byte */
+  for (int i=0;i<1;++i) dummy_packet[i] = 'F';
 
   /* register SIGQUIT signal */
   signal(SIGQUIT,pthread_out);
 
+  // int noapp = 1, counter = 0;
   while(1)
   {
     /* "non-blocking" read the data from tap interface */
@@ -200,19 +220,23 @@ void* tapTonet_c(void* input)
     do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
     if (nread == 0) {
+      // if (noapp) {
       /* no incoming data, send dummy packet instead */
       plength = htons(DUMMY_FLAG);
       nwrite = cwrite(net_fd, (char *)&plength, sizeof(plength));
       nwrite = cwrite(net_fd, dummy_packet, 1000);
       do_debug("TAP2NET dummy: Written %d bytes to the network\n", 1000);
-      /* send 1000 bytes dummy packet for every 1ms => 10Mbps sending rate */
+      /* send 1 Byte dummy packet for every 1ms => 10Mbps sending rate */
       nanosleep(&ts, NULL);
+      // if (counter++ > 2000) {noapp = 1; counter = 0;}
     } else if (nread > 0) {
       /* send real data to network */
       plength = htons(nread);
       nwrite = cwrite(net_fd, (char *)&plength, sizeof(plength));
       nwrite = cwrite(net_fd, buffer, nread);
       do_debug("TAP2NET: Written %d bytes to the network\n", nwrite);
+      // noapp = 0;
+      // counter = 0;
     }
   }
 }
@@ -234,7 +258,7 @@ void* tapTonet_s(void* input)
   while(1)
   {
     nread = cread(tap_fd, buffer, BUFSIZE);
-    
+   
     do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
     /* write length + packet */
@@ -252,10 +276,17 @@ void* tapTonet_s(void* input)
 void* netTotap(void* input)
 {
   do_debug("net to tap thread is up!\n");
-  int tap_fd = ((struct fds*)input)->tap;
-  int net_fd = ((struct fds*)input)->net;
+
+  int      tap_fd = ((struct fds*)input)->tap;
+  int      net_fd = ((struct fds*)input)->net;
   uint16_t nread, nwrite, plength;
-  char buffer[BUFSIZE];
+  char     buffer[BUFSIZE];
+  char     ctrl[CMSG_SPACE(sizeof(struct timeval))];
+  struct   cmsghdr *cmsg = (struct cmsghdr *) &ctrl;
+  struct   mmsghdr msgs[VLEN];
+  struct   iovec iovecs[VLEN];
+  struct   timeval time_kernel;
+  struct   timespec timeout = {1000, 0};
   
   /* register SIGPIPE signal */
   signal(SIGPIPE,signal_pipe);
@@ -271,18 +302,45 @@ void* netTotap(void* input)
       break;
     }
 
+    /* initialize the msgs for reading packet in */
+    memset(msgs, 0, sizeof(msgs));
+    msgs[0].msg_hdr.msg_control     = (char *)ctrl;
+    msgs[0].msg_hdr.msg_controllen  = sizeof(ctrl); 
+    iovecs[0].iov_base              = buffer;
+    msgs[0].msg_hdr.msg_iov         = &iovecs[0]; 
+    msgs[0].msg_hdr.msg_iovlen      = 1;
+
     if (ntohs(plength) == DUMMY_FLAG) {
-      /* read dummy packet and dump it immidiately*/
-      nread = read_n(net_fd, buffer, 1000);
-      do_debug("NET2TAP dummy: Read %d bytes from the network and dump it!\n", nread);
+      iovecs[0].iov_len = 1000;
+      nread = tread(net_fd, msgs, VLEN, MSG_WAITALL, &timeout);
+      if (cmsg->cmsg_level == SOL_SOCKET &&
+          cmsg->cmsg_type  == SCM_TIMESTAMP &&
+          cmsg->cmsg_len   == CMSG_LEN(sizeof(time_kernel))) {
+        memcpy(&time_kernel, CMSG_DATA(cmsg), sizeof(time_kernel));
+      }
+      printf("time_kernel: %d.%06d\n", (int) time_kernel.tv_sec, (int) time_kernel.tv_usec);
+      do_debug("NET2TAP dummy: Read %d bytes from the network and dump it!\n", msgs[0].msg_hdr.msg_iov->iov_len);
     } else {
-      /* read packet */
-      nread = read_n(net_fd, buffer, ntohs(plength));
-      do_debug("NET2TAP: Read %d bytes from the network\n", nread);
-      /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
-      nwrite = cwrite(tap_fd, buffer, nread);
+      iovecs[0].iov_len = ntohs(plength); 
+      nread = tread(net_fd, msgs, VLEN, MSG_WAITALL, &timeout);
+      do_debug("NET2TAP: Read %d bytes from the network\n", ntohs(plength));
+      nwrite = cwrite(tap_fd, buffer, ntohs(plength));
       do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
     }
+
+    /* work version */
+    // if (ntohs(plength) == DUMMY_FLAG) {
+    //   /* read dummy packet and dump it immidiately*/
+    //   nread = read_n(net_fd, buffer, 1000);
+    //   // do_debug("NET2TAP dummy: Read %d bytes from the network and dump it!\n", nread);
+    // } else {
+    //   /* read packet */
+    //   nread = read_n(net_fd, buffer, ntohs(plength));
+    //   do_debug("NET2TAP: Read %d bytes from the network\n", nread);
+    //   /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
+    //   nwrite = cwrite(tap_fd, buffer, nread);
+    //   do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
+    // }
   }
 }
 
@@ -394,13 +452,18 @@ int main(int argc, char *argv[]) {
     fcntl(tap_fd, F_SETFL, flags | O_NONBLOCK);
   }
 
-
   do_debug("Successfully connected to interface %s\n", if_name);
 
   if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     perror("socket()");
     exit(1);
   }
+  
+  int enabled = 1;
+  if (setsockopt(sock_fd, SOL_SOCKET, SO_TIMESTAMP, &enabled, sizeof(enabled)) < 0) {
+    perror("setsockopt()");
+    exit(1);
+  } 
 
   if (cliserv == CLIENT) {
     /* Client, try to connect to server */
@@ -426,7 +489,7 @@ int main(int argc, char *argv[]) {
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)) < 0) {
       perror("setsockopt()");
       exit(1);
-    } 
+    }
     
     memset(&local, 0, sizeof(local));
     local.sin_family = AF_INET;
