@@ -7,7 +7,7 @@ from mininet.cli import CLI
 from mininet.log import setLogLevel, info
 
 from subprocess import call
-import time, threading, os, json, collections, sys
+import time, threading, os, json, collections, sys, requests
 
 
 """Controller function"""
@@ -59,13 +59,19 @@ def controllerLogic(net, nodes, tcInfo, actList):
 
 def mobileNet(name, configFile):
 
-    print("*** Loading the parameters for simulation ***\n")
-    # Parsing the JSON file
-    with open(configFile, 'r') as read_file:
-        paras = json.load(read_file)
-    sats = paras['SatcomScnDef']['sateDef']
-    usrs = paras['SatcomScnDef']['userDef']
-    lnks = paras['SatcomScnDef']['scnLinkDef']
+    resp = requests.get('http://192.168.1.3:8080/api/settings/init')
+    if resp.status_code != 200:
+        # This means something went wrong.
+        raise ApiError('GET /tasks/ {}'.format(resp.status_code))
+    sats = resp.json()['satellites']
+
+    # print("*** Loading the parameters for simulation ***\n")
+    # # Parsing the JSON file
+    # with open(configFile, 'r') as read_file:
+    #     paras = json.load(read_file)
+    # sats = paras['SatcomScnDef']['sateDef']
+    # usrs = paras['SatcomScnDef']['userDef']
+    # lnks = paras['SatcomScnDef']['scnLinkDef']
 
     # Initializing the Mininet network
     net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
@@ -90,64 +96,72 @@ def mobileNet(name, configFile):
         nodes[swi_id] = node
         net.addLink(nodes[sat_id], nodes[swi_id])
 
-    # Creating user nodes: each user is constructed with one host and one switch
-    for usr,i in zip(usrs,range(len(sats)+1,len(sats)+len(usrs))):
-        usr_name = 'h'+str(i)
-        usr_id = str(usr['ID'])+'-usr'
-        print(usr_name, usr_id)
-        swi_name = 's' + str(i)
-        # Type id for user is 0
-        swi_id = '0'+str(usr['ID'])
-        node = net.addHost(usr_name, position=str(50+(30*i))+',150,0')
-        nodes[usr_id] = node
-        node = net.addSwitch(swi_name)
-        nodes[swi_id] = node
-        net.addLink(nodes[usr_id], nodes[swi_id])
+    # # Creating user nodes: each user is constructed with one host and one switch
+    # for usr,i in zip(usrs,range(len(sats)+1,len(sats)+len(usrs)+1)):
+    #     usr_name = 'h'+str(i)
+    #     usr_id = str(usr['ID'])+'-usr'
+    #     print(usr_name, usr_id)
+    #     swi_name = 's' + str(i)
+    #     # Type id for user is 0
+    #     swi_id = '0'+str(usr['ID'])
+    #     node = net.addHost(usr_name, position=str(50+(30*i))+',150,0')
+    #     nodes[usr_id] = node
+    #     node = net.addSwitch(swi_name)
+    #     nodes[swi_id] = node
+    #     net.addLink(nodes[usr_id], nodes[swi_id])
 
-    # Creating links
-    for lnk in lnks:
-        src_id = str(lnk['Config'][0]['srcType'])+str(lnk['Config'][0]['srcID'])
-        des_id = str(lnk['Config'][1]['destType'])+str(lnk['Config'][1]['destID'])
-        print(src_id, des_id)
-        node_s = nodes[src_id]
-        node_d = nodes[des_id]
-        net.addLink(node_s, node_d)
-        tcInfo.setdefault(src_id+'->'+des_id, {})
+    # # Creating links
+    # for lnk in lnks:
+    #     src_id = str(lnk['Config'][0]['srcType'])+str(lnk['Config'][0]['srcID'])
+    #     des_id = str(lnk['Config'][1]['destType'])+str(lnk['Config'][1]['destID'])
+    #     print(src_id, des_id)
+    #     node_s = nodes[src_id]
+    #     node_d = nodes[des_id]
+    #     net.addLink(node_s, node_d)
+    #     tcInfo.setdefault(src_id+'->'+des_id, {})
+    #     break
 
     # Creating default controller to the network
     node = net.addController('c0')
     nodes['c0'] = node
 
-    print("*** Loading event into Controller ***")
-    # Parsing the JSON file
-    with open('configs/gpsSCNSimulationscripv2t.json', 'r') as read_file:
-        events = json.load(read_file)
-    linkEvents = events['SimScript']['scnLinkEvnt']
-    appEvents = events['SimScript']['scnappEvnt']
-    # Storing all the events info
-    actList = {}
-    # Link event: format [time, [source, destination, event type, parameter]]
-    for evt in linkEvents:
-        for act in evt['actionlist']:
-            actList.setdefault(str(act['Time']), []).append([str(evt['srcType'])+str(evt['srcID']), str(evt['destType'])+str(evt['destID']), str(act['Type']), str(act['para1'])])
-    # Application event: format [time, [application name, event type, parameter]]
-    for evt in appEvents:
-        for act in evt['actionlist']:
-            actList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
-    # Sorting the event list based on the timestamp
-    actList = sorted(actList.items(), key=lambda x:float(x[0]))
-    print actList
+    # print("*** Loading event into Controller ***")
+    # # Parsing the JSON file
+    # with open('configs/gpsSCNSimulationscripv2t.json', 'r') as read_file:
+    #     events = json.load(read_file)
+    # linkEvents = events['SimScript']['scnLinkEvnt']
+    # appEvents = events['SimScript']['scnappEvnt']
+    # # Storing all the events info
+    # actList = {}
+    # # Link event: format [time, [source, destination, event type, parameter]]
+    # for evt in linkEvents:
+    #     for act in evt['actionlist']:
+    #         actList.setdefault(str(act['Time']), []).append([str(evt['srcType'])+str(evt['srcID']), str(evt['destType'])+str(evt['destID']), str(act['Type']), str(act['para1'])])
+    # # Application event: format [time, [application name, event type, parameter]]
+    # for evt in appEvents:
+    #     for act in evt['actionlist']:
+    #         actList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
+    # # Sorting the event list based on the timestamp
+    # actList = sorted(actList.items(), key=lambda x:float(x[0]))
+    # print actList
 
     print("*** Starting network simulation ***")
     # Starting the Mininet simulation network
     net.start()
 
     # Creating and starting the controller logic thread
-    control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
-    control_thread.start()
-    control_thread.join()
+    # control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
+    # control_thread.start()
+    # control_thread.join()
 
     # CLI(net)
+    # time.sleep(5)
+    # nodes['38833-sat'].cmdPrint('iperf -s &')
+    # nodes['39533-sat'].cmdPrint('iperf -c 10.0.0.22 -t 10')
+    # time.sleep(15)
+
+
+
 
     # print "*** Addressing for station ***"
     # for i in range(1, numOfSPSta+numOfMPSta+1):

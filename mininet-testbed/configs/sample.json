@@ -84,7 +84,7 @@
 		],
 		"scnLinkDef":[
 			{	"linkID":15,
-				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":0,"srcID":2},
+				"Config":[	{"paraID":101,"paraName":"linkSrc","srcType":0,"srcID":3},
 						{"paraID":102,"paraName":"linkDest","destType":1,"destID":28874},
 						{"paraID":109,"paraName":"carrierFreq","value":30.0,"unit":"GHz"},
 						{"paraName":"minEleAngle","value":30.0,"unit":"deg"}
