@@ -2,5 +2,6 @@
 venv/
 results/
 tunnel-test/results/
+tunnel-test/*.txt
 tunnel-forwarder/simpletun
 tunnel-forwarder/tunnel
