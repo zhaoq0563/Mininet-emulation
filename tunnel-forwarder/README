@@ -4,17 +4,14 @@ simpletun, a (too) simple tunnelling program.
 
 To compile the program, just do
 
-$ gcc simpletun.c -o simpletun
+$ gcc -o tunnel tunnel.c -lpthread -lm
 
-If you have GNU make, you can also exploit implicit targets and do
-
-$ make simpletun
 
 -------
 
 Usage:
-simpletun -i <ifacename> [-s|-c <serverIP>] [-p <port>] [-u|-a] [-d]
-simpletun -h
+tunnel -i <ifacename> [-s|-c <serverIP>] [-p <port>] [-u|-a] [-d]
+tunnel -h
 
 -i <ifacename>: Name of interface to use (mandatory)
 -s|-c <serverIP>: run in server mode (-s), or specify server address (-c <serverIP>) (mandatory)
@@ -37,11 +34,11 @@ starting to exchange packets. This is not recommended)
 
 Use is straightforward. On one end just run
 
-[server]$ ./simpletun -i tun13 -s
+[server]$ ./tunnel -i tun13 -s
 
 at the other end run
 
-[client]$ ./simpletun -i tun0 -c 10.2.3.4
+[client]$ ./tunnel -i tun0 -c 10.2.3.4
 
 where 10.2.3.4 is the remote server's IP address, and tun13 and tun0 must be 
 replaced with the names of the actual tun interfaces used on the computers.

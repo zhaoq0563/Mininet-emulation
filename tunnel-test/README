@@ -6,8 +6,10 @@ Prerequisite
 ------------
 
 Make sure the forwarder app is ready
-	- Check if the binary is compiled in simpletun folder
-	- If NOT, compile it with 'gcc -o simpletun simpletun.c'
+	- Check if the binary is compiled in tunel-test folder
+	- If NOT, compile it with
+		- 'gcc -o tunnel tunnel.c -lpthread -lm', this is the version without delay shaping
+		- 'gcc -o tunnel tunnel-thread.c -lpthread -lm', this is the version with delay shaping
 
 
 No router topology

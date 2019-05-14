@@ -77,7 +77,7 @@ def mobileNet(loc, loss, conges, delay):
     os.system('sudo ovs-vsctl add-port s1 vport1')
     os.system('sudo ovs-vsctl add-port s4 vport2')
 
-    CLI(net)
+    # CLI(net)
 
     print "*** Starting to generate the traffic ***"
     traffic_thread = threading.Thread(target=sendingIperfTraffic, args=(nodes, loc))
@@ -95,11 +95,11 @@ def mobileNet(loc, loss, conges, delay):
 
 
 if __name__ == '__main__':
-    print("\n*** *** *** *** *** *** *** *** *** *** ***")
+    print("\n\n*** *** *** *** *** *** *** *** *** *** ***")
     print("***                                     ***")
     print("***  Welcome to the Mininet simulation  ***")
     print("***                                     ***")
-    print("*** *** *** *** *** *** *** *** *** *** ***\n")
+    print("*** *** *** *** *** *** *** *** *** *** ***\n\n")
     while True:
         print("--- Available congestion control: ")
         print("reno\tcubic\thybla\tbbr")
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    loss = 0.0000000001
+    loss = 0.001
     user = os.getenv('SUDO_USER')
     if not os.path.exists('results'):
         os.mkdir('results')

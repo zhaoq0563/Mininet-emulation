@@ -91,7 +91,7 @@ def mobileNet(loc, loss, conges, delay):
     r2.cmd('../tunnel-forwarder/netconfig.sh set tunt2 192.168.0.2/24')
     r2.cmd('ip route add 10.0.1.0/24 via 192.168.0.2')
 
-    # Launching the forwarder to initiate the tunnel
+    Launching the forwarder to initiate the tunnel
     r2.cmd('../tunnel-forwarder/tunnel -i tunt2 -s &')
     r1.cmd('../tunnel-forwarder/tunnel -i tunt1 -c 10.0.0.2 &')
 
@@ -123,11 +123,11 @@ def mobileNet(loc, loss, conges, delay):
 
 
 if __name__ == '__main__':
-    print("\n*** *** *** *** *** *** *** *** *** *** ***")
+    print("\n\n*** *** *** *** *** *** *** *** *** *** ***")
     print("***                                     ***")
     print("***  Welcome to the Mininet simulation  ***")
     print("***                                     ***")
-    print("*** *** *** *** *** *** *** *** *** *** ***\n")
+    print("*** *** *** *** *** *** *** *** *** *** ***\n\n")
     while True:
         print("--- Available congestion control: ")
         print("reno\tcubic\thybla\tbbr")
@@ -139,8 +139,8 @@ if __name__ == '__main__':
         delay = raw_input('--- Please input the delay (ms): ')
         break
 
-    # loss = 0.0000000001
-    loss = 0.001
+    loss = 0.0000000001
+    # loss = 0.001
     # loss = 0.0
     user = os.getenv('SUDO_USER')
     if not os.path.exists('results'):

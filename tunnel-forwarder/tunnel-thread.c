@@ -29,6 +29,7 @@
 #define CLIENT 0
 #define SERVER 1
 #define PORT 55555
+#define SHAPINGDELAY 1000000 
 #define VLEN 1
 
 int debug;
@@ -202,6 +203,29 @@ int read_n(int fd, char *buf, int n) {
 }
 
 /**************************************************************************
+ * sendToTap: send the packet to the tap interface with delay.            *
+ **************************************************************************/
+void *sendToTap(void *arg) {
+  uint16_t nwrite;
+  struct thdPar *data = (struct thdPar *)arg;
+
+  /* sleep for delay shaping */
+  long int delay = (SHAPINGDELAY - *(data->time));
+  printf("thread %d will sleep for %ld usecs!\n", (int)pthread_self(), delay);
+  if (delay > 0) usleep(delay);
+
+  do_debug("NET2TAP: Read %d bytes from the network\n", *(data->plength));
+  nwrite = cwrite(*(data->net), data->buffer, *(data->plength));
+  do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
+
+  /* free the space */
+  free(data->plength);
+  free(data->buffer);
+  free(data->time);
+  free(data);
+}
+
+/**************************************************************************
  * signal_pipe: netTotap receives signal SIGPIPE when tapTonet breaks     *
  *              and netTotap sends SIGQUIT signal to tapTonet.            *
  **************************************************************************/
@@ -233,68 +257,34 @@ void* tapTonet_c(void* input)
   int       net_fd = *((struct fds*)input)->net;
   uint16_t  nread, nwrite, plength;
   char      buffer[BUFSIZE];
-  char      dummy_packet[BUFSIZE];
-
-  struct    timespec ts = {0, 500000};
-  struct    timeval  tv;
-
-  // FILE *fp_sdr = fopen("sender_time.txt", "w");
-
-  /* construct the dummy packet */
-  /* dummy packet size = 1 Byte */
-  // for (int i=0;i<1;++i) dummy_packet[i] = 'F';
 
   /* register SIGQUIT signal */
   signal(SIGQUIT,pthread_out);
 
-  // int noapp = 1, counter = 0;
   while(1)
   {
     /* "non-blocking" read the data from tap interface */
     nread = crecv(tap_fd, buffer, BUFSIZE);
-    nread != 0 ? do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread) : 1;
 
-    if (nread == 0) {
-      // Lets skip the dummy packet first!
+    if (nread != 0) {
+      do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
-      // // if (noapp) {
-      // /* no incoming data, send dummy packet instead */
-      // plength = htons(DUMMY_FLAG);
-      // nwrite  = cwrite(net_fd, (char *)&plength, sizeof(plength));
-      // nwrite  = cwrite(net_fd, dummy_packet, 1000);
-      // gettimeofday(&tv, NULL);
-      // fprintf(fp_sdr, "%d.%d\n", (int)tv.tv_sec, (int)tv.tv_usec);
-      // do_debug("TAP2NET dummy: Written %d bytes to the network\n", 1000);
-      // /* send 1 Byte dummy packet for every 1ms => 10Mbps sending rate */
-      // nanosleep(&ts, NULL);
-      // // if (counter++ > 2000) {noapp = 1; counter = 0;}
-    } else if (nread > 0) {
       /* send real data + timestamp (16 bytes) to network */
-      
       /* update the buffer */
-      // struct timeval t;
-      // gettimeofday(&t, NULL);
-      // // printf("send at: %ld.%ld\n", t.tv_sec, t.tv_usec);
-      // itoc(t.tv_sec, &nread, buffer);
-      // itoc(t.tv_usec, &nread, buffer);
+      struct timeval t;
+      gettimeofday(&t, NULL);
+      itoc(t.tv_sec, &nread, buffer);
+      itoc(t.tv_usec, &nread, buffer);
 
-      // /* update the length of the total data */
-      // // printf("the length now is: %d\n", nread);
+      /* update the length of the total data */
       plength = htons(nread);
 
       /* forward the data to tunnel */
       nwrite  = cwrite(net_fd, (char *)&plength, sizeof(plength));
       nwrite  = cwrite(net_fd, buffer, nread);
       do_debug("TAP2NET: Written %d bytes to the network\n", nwrite);
-
-      // gettimeofday(&tv, NULL);
-      // printf("%d.%d\n", (int)tv.tv_sec, (int)tv.tv_usec);
-      // fprintf(fp_sdr, "%d.%d\n", (int)tv.tv_sec, (int)tv.tv_usec);
-      // noapp = 0;
-      // counter = 0;
-    }
+    } else continue;
   }
-  // fclose(fp_sdr);
 }
 
 /**************************************************************************
@@ -308,17 +298,16 @@ void* tapTonet_s(void* input)
   uint16_t  nread, nwrite, plength;
   char      buffer[BUFSIZE];
 
-  /* construct the dummy packet */
   signal(SIGQUIT, pthread_out);
 
   while(1)
   {
     nread = cread(tap_fd, buffer, BUFSIZE);
 
-    // struct timeval t;
-    // gettimeofday(&t, NULL);
-    // itoc(t.tv_sec, &nread, buffer);
-    // itoc(t.tv_usec, &nread, buffer);
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    itoc(t.tv_sec, &nread, buffer);
+    itoc(t.tv_usec, &nread, buffer);
    
     do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
@@ -334,6 +323,7 @@ void* tapTonet_s(void* input)
 /**************************************************************************
  * netTotap_s: Net interface to Tap interface pthread.                      *
  **************************************************************************/
+/* thread version */
 void* netTotap_s(void* input)
 {
   do_debug("net to tap thread is up!\n");
@@ -341,18 +331,17 @@ void* netTotap_s(void* input)
   int      tap_fd = *((struct fds*)input)->tap;
   int      net_fd = *((struct fds*)input)->net;
   uint16_t nread, nwrite, plength;
-  char     buffer[BUFSIZE];
-  // char     ctrl[CMSG_SPACE(sizeof(struct timeval))];
-  // struct   cmsghdr *cmsg = (struct cmsghdr *) &ctrl;
-  // struct   mmsghdr msgs[VLEN];
-  // struct   iovec iovecs[VLEN];
-  // struct   timeval time_send, time_receive, time_delay;
-  // struct   timespec timeout = {1000, 0};
+  struct   timeval time_send, time_receive, time_delay;
 
-  // FILE *fp_rec = fopen("delay_time.txt", "w");
+  pthread_t tid;
+  pthread_attr_t a;
+  pthread_attr_init(&a);
+  pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
+
+  // FILE *fp_rec = fopen("delay_time_cTos.txt", "w");
   
   /* register SIGPIPE signal */
-  signal(SIGPIPE,signal_pipe);
+  signal(SIGPIPE, signal_pipe);
 
   while(1)
   {
@@ -365,140 +354,42 @@ void* netTotap_s(void* input)
       break;
     }
 
-    /* initialize the msgs for reading packet in */
-    // memset(msgs, 0, sizeof(msgs));
-    // msgs[0].msg_hdr.msg_control     = (char *)ctrl;
-    // msgs[0].msg_hdr.msg_controllen  = sizeof(ctrl); 
-    // iovecs[0].iov_base              = buffer;
-    // msgs[0].msg_hdr.msg_iov         = &iovecs[0]; 
-    // msgs[0].msg_hdr.msg_iovlen      = 1;
+    uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
+    char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
+    long int   *thr_time = (long int *)malloc(sizeof(long int));
 
-    // if (ntohs(plength) == DUMMY_FLAG) {
-    //   // iovecs[0].iov_len = 1000;
-    //   // nread = tread(net_fd, msgs, VLEN, MSG_WAITALL, &timeout);
-    //   // if (cmsg->cmsg_level == SOL_SOCKET &&
-    //   //     cmsg->cmsg_type  == SCM_TIMESTAMP &&
-    //   //     cmsg->cmsg_len   == CMSG_LEN(sizeof(time_kernel))) {
-    //   //   memcpy(&time_kernel, CMSG_DATA(cmsg), sizeof(time_kernel));
-    //   // }
-    //   // // printf("time_kernel: %d.%d\n", (int)time_kernel.tv_sec, (int)time_kernel.tv_usec);
-    //   // fprintf(fp_rec, "%d.%d\n", (int)time_kernel.tv_sec, (int)time_kernel.tv_usec);
-    //   // do_debug("NET2TAP dummy: Read %d bytes from the network and dump it!\n", msgs[0].msg_hdr.msg_iov->iov_len);
-    // } else {
-    //   iovecs[0].iov_len = ntohs(plength); 
-    //   nread = tread(net_fd, msgs, VLEN, MSG_WAITALL, &timeout);
+    /* read packet */
+    nread = read_n(net_fd, buffer, ntohs(plength));
 
-    //   /* get the receive time for the packet */
-    //   if (cmsg->cmsg_level == SOL_SOCKET &&
-    //       cmsg->cmsg_type  == SCM_TIMESTAMP &&
-    //       cmsg->cmsg_len   == CMSG_LEN(sizeof(time_receive))) {
-    //     memcpy(&time_receive, CMSG_DATA(cmsg), sizeof(time_receive));
-    //   }
+    /* get the send time for the packet */
+    time_send.tv_sec  = ctoi(ntohs(plength)-16, buffer);
+    time_send.tv_usec = ctoi(ntohs(plength)-8, buffer);
 
-    //   // for (int i=0;i<8;++i) printf("\n--- %c", buffer[iovecs[0].iov_len-17+i]);
-    //   /* get the send time for the packet */
-    //   time_send.tv_sec  = ctoi(iovecs[0].iov_len-16, buffer);
-    //   time_send.tv_usec = ctoi(iovecs[0].iov_len-8, buffer);
+    /* calculate the delay */
+    gettimeofday(&time_receive, NULL);
+    timersub(&time_receive, &time_send, &time_delay);
+    // fprintf(fp_rec, "%ld\n", time_delay.tv_usec);
+    // fflush(fp_rec);
+    *thr_time = time_delay.tv_usec;
 
-    //   // printf("send at: %ld.%ld   --->  arrive at: %ld.%ld\n", time_send.tv_sec, time_send.tv_usec, time_receive.tv_sec, time_receive.tv_usec);
+    /* update length of the received data */
+    *newplength = ntohs(plength)-16;
 
-    //   /* calculate the delay */
-    //   // int delay = (time_receive.tv_sec - time_send.tv_sec) * 1000000 + time_receive.tv_usec - time_send.tv_usec;
-    //   timersub(&time_receive, &time_send, &time_delay);
-    //   fprintf(fp_rec, "%ld\n", time_delay.tv_usec);
-    //   fflush(fp_rec);
+    struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
+    tp->net     = &tap_fd;
+    tp->plength = newplength;
+    tp->buffer  = buffer;
+    tp->time    = thr_time;
 
-    //   /* update length of the received data */
-    //   uint16_t newplength = ntohs(plength)-16;
-
-    //   do_debug("NET2TAP: Read %d bytes from the network\n", newplength);
-    //   nwrite = cwrite(tap_fd, buffer, newplength);
-    //   do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
-    // }
-
-    /* work version */
-    if (ntohs(plength) == DUMMY_FLAG) {
-      /* read dummy packet and dump it immidiately*/
-      nread = read_n(net_fd, buffer, 1000);
-      // do_debug("NET2TAP dummy: Read %d bytes from the network and dump it!\n", nread);
-    } else {
-      /* read packet */
-      nread = read_n(net_fd, buffer, ntohs(plength));
-      do_debug("NET2TAP: Read %d bytes from the network\n", nread);
-      /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
-      nwrite = cwrite(tap_fd, buffer, nread);
-      do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
-    }
+    pthread_create(&tid, &a, sendToTap, (void *)tp);
   }
   // fclose(fp_rec);
 }
 
-
-/* thread version */
-// void* netTotap_s(void* input)
-// {
-//   do_debug("net to tap thread is up!\n");
-
-//   int      tap_fd = *((struct fds*)input)->tap;
-//   int      net_fd = *((struct fds*)input)->net;
-//   uint16_t nread, nwrite, plength;
-//   struct   timeval time_send, time_receive, time_delay;
-
-//   pthread_t tid;
-//   pthread_attr_t a;
-//   pthread_attr_init(&a);
-//   pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
-
-//   FILE *fp_rec = fopen("delay_time_cTos.txt", "w");
-  
-//   /* register SIGPIPE signal */
-//   signal(SIGPIPE, signal_pipe);
-
-//   while(1)
-//   {
-//     /* keep reading the data from net interface */
-//     nread = read_n(net_fd, (char *)&plength, sizeof(plength));
-//     do_debug("Data length: %d\n", ntohs(plength));
-
-//     if (nread == 0) {
-//        /* ctrl-c at the other end */
-//       break;
-//     }
-
-//     uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
-//     char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
-//     long int   *thr_time = (long int *)malloc(sizeof(long int));
-//     /* read packet */
-//     nread = read_n(net_fd, buffer, ntohs(plength));
-
-//     /* get the send time for the packet */
-//     time_send.tv_sec  = ctoi(ntohs(plength)-16, buffer);
-//     time_send.tv_usec = ctoi(ntohs(plength)-8, buffer);
-
-//     /* calculate the delay */
-//     gettimeofday(&time_receive, NULL);
-//     timersub(&time_receive, &time_send, &time_delay);
-//     fprintf(fp_rec, "%ld\n", time_delay.tv_usec);
-//     fflush(fp_rec);
-//     *thr_time = time_delay.tv_usec;
-
-//     /* update length of the received data */
-//     *newplength = ntohs(plength)-16;
-
-//     struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
-//     tp->net     = &tap_fd;
-//     tp->plength = newplength;
-//     tp->buffer  = buffer;
-//     tp->time    = thr_time;
-
-//     pthread_create(&tid, &a, sendToTap, (void *)tp);
-//   }
-//   fclose(fp_rec);
-// }
-
 /**************************************************************************
  * netTotap_c: Net interface to Tap interface pthread.                      *
  **************************************************************************/
+/* thread version */
 void* netTotap_c(void* input)
 {
   do_debug("net to tap thread is up!\n");
@@ -506,100 +397,59 @@ void* netTotap_c(void* input)
   int      tap_fd = *((struct fds*)input)->tap;
   int      net_fd = *((struct fds*)input)->net;
   uint16_t nread, nwrite, plength;
-  char     buffer[BUFSIZE];
+  struct   timeval time_send, time_receive, time_delay;
+
+  pthread_t tid;
+  pthread_attr_t a;
+  pthread_attr_init(&a);
+  pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
+
+  // FILE *fp_rec = fopen("delay_time_sToc.txt", "w");
   
   /* register SIGPIPE signal */
-  signal(SIGPIPE,signal_pipe);
+  signal(SIGPIPE, signal_pipe);
 
   while(1)
   {
     /* keep reading the data from net interface */
     nread = read_n(net_fd, (char *)&plength, sizeof(plength));
-    do_debug("Data length: %d\n", ntohs(plength));
 
     if (nread == 0) {
        /* ctrl-c at the other end */
       break;
     }
 
-    /* work version */
-    if (ntohs(plength) == DUMMY_FLAG) {
-      /* read dummy packet and dump it immidiately*/
-      nread = read_n(net_fd, buffer, 1000);
-      // do_debug("NET2TAP dummy: Read %d bytes from the network and dump it!\n", nread);
-    } else {
-      /* read packet */
-      nread = read_n(net_fd, buffer, ntohs(plength));
-      do_debug("NET2TAP: Read %d bytes from the network\n", nread);
-      /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
-      nwrite = cwrite(tap_fd, buffer, nread);
-      do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
-    }
+    uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
+    char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
+    long int   *thr_time = (long int *)malloc(sizeof(long int));
+
+    /* read packet */
+    nread = read_n(net_fd, buffer, ntohs(plength));
+
+    /* get the send time for the packet */
+    time_send.tv_sec  = ctoi(ntohs(plength)-16, buffer);
+    time_send.tv_usec = ctoi(ntohs(plength)-8, buffer);
+
+    /* calculate the delay */
+    gettimeofday(&time_receive, NULL);
+    timersub(&time_receive, &time_send, &time_delay);
+    // fprintf(fp_rec, "%ld\n", time_delay.tv_usec);
+    // fflush(fp_rec);
+    *thr_time = time_delay.tv_usec;
+
+    /* update length of the received data */
+    *newplength = ntohs(plength)-16;
+
+    struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
+    tp->net     = &tap_fd;
+    tp->plength = newplength;
+    tp->buffer  = buffer;
+    tp->time    = thr_time;
+
+    pthread_create(&tid, &a, sendToTap, (void *)tp);
   }
+  // fclose(fp_rec);
 }
-
-
-/* thread version */
-// void* netTotap_c(void* input)
-// {
-//   do_debug("net to tap thread is up!\n");
-
-//   int      tap_fd = *((struct fds*)input)->tap;
-//   int      net_fd = *((struct fds*)input)->net;
-//   uint16_t nread, nwrite, plength;
-//   struct   timeval time_send, time_receive, time_delay;
-
-//   pthread_t tid;
-//   pthread_attr_t a;
-//   pthread_attr_init(&a);
-//   pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
-
-//   FILE *fp_rec = fopen("delay_time_sToc.txt", "w");
-  
-//   /* register SIGPIPE signal */
-//   signal(SIGPIPE, signal_pipe);
-
-//   while(1)
-//   {
-//     /* keep reading the data from net interface */
-//     nread = read_n(net_fd, (char *)&plength, sizeof(plength));
-//     do_debug("Data length: %d\n", ntohs(plength));
-
-//     if (nread == 0) {
-//        /* ctrl-c at the other end */
-//       break;
-//     }
-
-//     uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
-//     char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
-//     long int   *thr_time = (long int *)malloc(sizeof(long int));
-//     /* read packet */
-//     nread = read_n(net_fd, buffer, ntohs(plength));
-
-//     /* get the send time for the packet */
-//     time_send.tv_sec  = ctoi(ntohs(plength)-16, buffer);
-//     time_send.tv_usec = ctoi(ntohs(plength)-8, buffer);
-
-//     /* calculate the delay */
-//     gettimeofday(&time_receive, NULL);
-//     timersub(&time_receive, &time_send, &time_delay);
-//     fprintf(fp_rec, "%ld\n", time_delay.tv_usec);
-//     fflush(fp_rec);
-//     *thr_time = time_delay.tv_usec;
-
-//     /* update length of the received data */
-//     *newplength = ntohs(plength)-16;
-
-//     struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
-//     tp->net     = &tap_fd;
-//     tp->plength = newplength;
-//     tp->buffer  = buffer;
-//     tp->time    = thr_time;
-
-//     pthread_create(&tid, &a, sendToTap, (void *)tp);
-//   }
-//   fclose(fp_rec);
-// }
 
 /**************************************************************************
  * my_err: prints custom error messages on stderr.                        *
