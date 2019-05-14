@@ -7,8 +7,10 @@ from mininet.cli import CLI
 from mininet.log import setLogLevel, info
 
 from subprocess import call
-import time, threading, os, json, collections, sys, requests
+import time, threading, os, json, collections, sys, requests, socket
 
+HOST = '192.168.88.131'
+PORT = 65432
 
 """Controller function"""
 
@@ -59,11 +61,34 @@ def controllerLogic(net, nodes, tcInfo, actList):
 
 def mobileNet(name, configFile):
 
-    resp = requests.get('http://192.168.1.3:8080/api/settings/init')
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+
+    instr = ''
+    while instr != 'start':
+        print("*** Waiting for instructions ... ***")
+        s.listen(5)
+        conn, addr = s.accept()
+        # print('Connected by ', addr)
+        while True:
+            instr = conn.recv(1024)
+            # print instr
+            if not instr:
+                print('Connection lost...')
+                break
+            if instr == 'start':
+                break
+    s.close()
+
+    print("*** Starting to initialize the emulation topology ***")
+    resp = requests.get('http://192.168.1.3:8888/api/settings/init')
     if resp.status_code != 200:
         # This means something went wrong.
         raise ApiError('GET /tasks/ {}'.format(resp.status_code))
     sats = resp.json()['satellites']
+
+    print 'already parsed the init info\n'
+    print sats
 
     # print("*** Loading the parameters for simulation ***\n")
     # # Parsing the JSON file
@@ -154,7 +179,7 @@ def mobileNet(name, configFile):
     # control_thread.start()
     # control_thread.join()
 
-    # CLI(net)
+    CLI(net)
     # time.sleep(5)
     # nodes['38833-sat'].cmdPrint('iperf -s &')
     # nodes['39533-sat'].cmdPrint('iperf -c 10.0.0.22 -t 10')
@@ -263,26 +288,27 @@ def mobileNet(name, configFile):
 
 
 if __name__ == '__main__':
-    print("*** *** *** *** *** *** *** *** *** *** ***")
+    print("\n*** *** *** *** *** *** *** *** *** *** ***")
     print("***                                     ***")
     print("***  Welcome to the Mininet simulation  ***")
     print("***                                     ***")
     print("*** *** *** *** *** *** *** *** *** *** ***\n")
-    while True:
-        print("--- Available configuration: ")
-        for config in os.listdir('./configs/'):
-            if '.json' in config:
-                print(config.rstrip('.json'))
-        configName = raw_input('--- Please select the configuration file: ')
-        print(configName+'.json')
-        if os.path.exists('./configs/'+configName+'.json'):
-            break
+    # while True:
+    #     print("--- Available configuration: ")
+    #     for config in os.listdir('./configs/'):
+    #         if '.json' in config:
+    #             print(config.rstrip('.json'))
+    #     configName = raw_input('--- Please select the configuration file: ')
+    #     print(configName+'.json')
+    #     if os.path.exists('./configs/'+configName+'.json'):
+    #         break
 
-    while True:
-        name = raw_input('--- Please name this testing: ')
-        break
+    # while True:
+    #     name = raw_input('--- Please name this testing: ')
+    #     break
 
     setLogLevel('info')
 
-    mobileNet(name, 'configs/'+configName+'.json')
+    # mobileNet(name, 'configs/'+configName+'.json')
+    mobileNet('test', 'configs/sample.json')
 
