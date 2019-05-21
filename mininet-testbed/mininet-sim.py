@@ -58,10 +58,25 @@ def controllerLogic(net, nodes, tcInfo, actList):
 
 """Helper function"""
 
-# def linkUpdate(app, evt):
+def linkUpdate(net, nodes, event, evts, protocol):
+	# Update links
+	path = event['path']['pathById']
+	for i in range(len(path)-1):
+		snode = nodes[path[i]+'-swi']
+		dnode = nodes[path[i+1]+'-swi']
+		net.addLink(snode, dnode, bw=100)
+
+	# Update event detail for emulation
+	evt_detail = {}
+	evt_detail['src'] = path[0]
+	evt_detail['dst'] = path[-1]
+	evt_detail['prc'] = protocol
+	evt_detail['tra'] = event['throughput']
+	evts.append(evt_detail)
 
 
-
+def linkEval(net, nodes, evts):
+	
 
 """Main function of the emulation"""
 
@@ -196,14 +211,24 @@ def mobileNet(name, configFile):
     apps = events.json()
     evts_tracker = [0 for _ in range(len(apps))]
     stime = datetime.datetime.strptime(sorted(apps, key=lambda e:e['startTime'])[0]['startTime'], '%Y-%m-%d %H:%M:%S.%f')
-    etime = datetime.datetime.strptime(sorted(apps, key=lambda e:e['endTime'], reverse=True)[0]['endTime'], '%Y-%m-%d %H:%M:%S.%f')
+    etime = datetime.datetime.strptime(sorted(apps, key=lambda e:e['endTime'])[-1]['endTime'], '%Y-%m-%d %H:%M:%S.%f')
     print stime
-    print etime 
+    print etime
 
+    while stime < etime:
+    	evts = []
+    	for evt, app in enumerate(apps):
+    		for index, event in enumerate(app['events'][evt:]):
+    			curtime = datetime.datetime.strptime(event['timetick'], '%Y-%m-%dT%H:%M:%S.%f')
+    			if stime >= curtime and stime <= (curtime+datetime.timedelta(seconds=30)):
+    				linkUpdate(net, nodes, event, evts, app['protocol'])
+    				evts_tracker[evt] += (index+1)
+    				break
+    	control_thread = threading.Thread(target=linkEval,args=(net, nodes, evts))
+	    control_thread.start()
+	    control_thread.join()
+    	stime += datetime.timedelta(seconds=30)
   
-
-
-
     exit(1)
 
     CLI(net)
