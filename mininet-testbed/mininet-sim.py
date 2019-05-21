@@ -58,13 +58,17 @@ def controllerLogic(net, nodes, tcInfo, actList):
 
 """Helper function"""
 
-def linkUpdate(net, nodes, event, evts, protocol):
+# def linkUpdate(net, nodes, event, evts, protocol):
+def linkUpdate(net, nodes, links, event, evts, protocol):
+    print "stage ---------------\n\n"
 	# Update links
-	path = event['path']['pathById']
-	for i in range(len(path)-1):
-		snode = nodes[path[i]+'-swi']
-		dnode = nodes[path[i+1]+'-swi']
+    path = json.loads(event['path'])['pathById']
+    for i in range(len(path)-1):
+        snode = nodes[path[i]+'-swi']
+        dnode = nodes[path[i+1]+'-swi']
+        print path[i]+'-swi' + '    ---->>     ' + path[i+1]+'-swi'
 		net.addLink(snode, dnode, bw=100)
+        links.append((path[i]+'-swi', path[i+1]+'-swi'))
 
 	# Update event detail for emulation
 	evt_detail = {}
@@ -76,132 +80,139 @@ def linkUpdate(net, nodes, event, evts, protocol):
 
 
 def linkEval(net, nodes, evts):
+    for evt in evts:
+        snode = nodes[evt['src']+'-host']
+        dnode = nodes[evt['dst']+'-host']
+        dnode.cmdPrint('iperf -s &')
+        dstIp = dnode.IP()
+        snode.cmdPrint('iperf -c'+dstIp+' -t 30')
+    time.sleep(30)
 	
 
 """Main function of the emulation"""
 
 def mobileNet(name, configFile):
 
-    # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # s.bind((HOST, PORT))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
 
-    # instr = ''
-    # while instr != 'start':
-    #     print("*** Waiting for instructions ... ***")
-    #     s.listen(5)
-    #     conn, addr = s.accept()
-    #     # print('Connected by ', addr)
-    #     while True:
-    #         instr = conn.recv(1024)
-    #         # print instr
-    #         if not instr:
-    #             print('Connection lost...')
-    #             break
-    #         if instr == 'start':
-    #             break
-    # s.close()
+    instr = ''
+    while instr != 'start':
+        print("*** Waiting for instructions ... ***")
+        s.listen(5)
+        conn, addr = s.accept()
+        # print('Connected by ', addr)
+        while True:
+            instr = conn.recv(1024)
+            # print instr
+            if not instr:
+                print('Connection lost...')
+                break
+            if instr == 'start':
+                break
+    s.close()
 
-    # print("*** Starting to initialize the emulation topology ***")
-    # topos = requests.get('http://192.168.1.3:8888/api/settings/init')
-    # if topos.status_code != 200:
-    #     # This means something went wrong.
-    #     raise ApiError('GET /tasks/ {}'.format(topos.status_code))
-    # sats = topos.json()['satellites']
-    # bass = topos.json()['basestations']
+    print("*** Starting to initialize the emulation topology ***")
+    topos = requests.get('http://192.168.1.3:8888/api/settings/init')
+    if topos.status_code != 200:
+        # This means something went wrong.
+        raise ApiError('GET /tasks/ {}'.format(topos.status_code))
+    sats = topos.json()['satellites']
+    bass = topos.json()['basestations']
 
-    # print sats
-    # print bass
+    print sats
+    print bass
 
-    # # print("*** Loading the parameters for emulation ***\n")
+    # print("*** Loading the parameters for emulation ***\n")
+    # Parsing the JSON file
+    # with open(configFile, 'r') as read_file:
+    #     paras = json.load(read_file)
+    # sats = paras['SatcomScnDef']['sateDef']
+    # usrs = paras['SatcomScnDef']['userDef']
+    # lnks = paras['SatcomScnDef']['scnLinkDef']
+
+    # Initializing the Mininet network
+    net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
+
+    print("*** Creating nodes ***")
+    # Storing all nodes objects
+    nodes = {}
+    # Storing all links information
+    links = []
+
+    # Creating satellite nodes: each satellite is constructed with one host and one switch
+    for sat,i in zip(sats,range(1,len(sats)+1)):
+        sat_name = 'h'+str(i)
+        # Satellite host
+        sat_id = str(sat['satID'])+'-host'
+        print(sat_name, sat_id)
+        swi_name = 's'+str(i)
+        # Satellite switch
+        swi_id = str(sat['satID'])+'-swi'
+        node = net.addHost(sat_name, position=str(50+(5*i))+',50,0')
+        nodes[sat_id] = node
+        node = net.addSwitch(swi_name)
+        nodes[swi_id] = node
+        net.addLink(nodes[sat_id], nodes[swi_id])
+
+    # Creating base station nodes: each base station is constructed with one host and one switch
+    for bas,i in zip(bass,range(len(sats)+1,len(sats)+len(bass)+1)):
+        bas_name = 'h'+str(i)
+        # Base station host
+        bas_id = str(bas['id'])+'-host'
+        print(bas_name, bas_id)
+        swi_name = 's'+str(i)
+        # Base station switch
+        swi_id = str(bas['id'])+'-swi'
+        node = net.addHost(bas_name, position=str(50+(30*i))+',150,0')
+        nodes[bas_id] = node
+        node = net.addSwitch(swi_name)
+        nodes[swi_id] = node
+        net.addLink(nodes[bas_id], nodes[swi_id])
+
+    # # Creating links
+    # for lnk in lnks:
+    #     src_id = str(lnk['Config'][0]['srcType'])+str(lnk['Config'][0]['srcID'])
+    #     des_id = str(lnk['Config'][1]['destType'])+str(lnk['Config'][1]['destID'])
+    #     print(src_id, des_id)
+    #     node_s = nodes[src_id]
+    #     node_d = nodes[des_id]
+    #     net.addLink(node_s, node_d, bw=100)
+    #     tcInfo.setdefault(src_id+'->'+des_id, {})
+    #     break
+
+    # Creating default controller to the network
+    node = net.addController('c0')
+    nodes['c0'] = node
+
+    # print("*** Loading event into Controller ***")
     # # Parsing the JSON file
-    # # with open(configFile, 'r') as read_file:
-    # #     paras = json.load(read_file)
-    # # sats = paras['SatcomScnDef']['sateDef']
-    # # usrs = paras['SatcomScnDef']['userDef']
-    # # lnks = paras['SatcomScnDef']['scnLinkDef']
+    # with open('configs/gpsSCNSimulationscripv2t.json', 'r') as read_file:
+    #     events = json.load(read_file)
+    # linkEvents = events['SimScript']['scnLinkEvnt']
+    # appEvents = events['SimScript']['scnappEvnt']
+    # # Storing all the events info
+    # actList = {}
+    # # Link event: format [time, [source, destination, event type, parameter]]
+    # for evt in linkEvents:
+    #     for act in evt['actionlist']:
+    #         actList.setdefault(str(act['Time']), []).append([str(evt['srcType'])+str(evt['srcID']), str(evt['destType'])+str(evt['destID']), str(act['Type']), str(act['para1'])])
+    # # Application event: format [time, [application name, event type, parameter]]
+    # for evt in appEvents:
+    #     for act in evt['actionlist']:
+    #         actList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
+    # # Sorting the event list based on the timestamp
+    # actList = sorted(actList.items(), key=lambda x:float(x[0]))
+    # print actList
 
-    # # Initializing the Mininet network
-    # net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
+    print("*** Starting network emulation ***")
+    # Starting the Mininet emulation network
+    net.start()
 
-    # print("*** Creating nodes ***")
-    # # Storing all nodes objects
-    # nodes = {}
-    # # Storing all links information
-    # tcInfo = {}
-
-    # # Creating satellite nodes: each satellite is constructed with one host and one switch
-    # for sat,i in zip(sats,range(1,len(sats)+1)):
-    #     sat_name = 'h'+str(i)
-    #     # Satellite host
-    #     sat_id = str(sat['satID'])+'-sat'
-    #     print(sat_name, sat_id)
-    #     swi_name = 's'+str(i)
-    #     # Satellite switch
-    #     swi_id = str(sat['satID'])+'-swi'
-    #     node = net.addHost(sat_name, position=str(50+(5*i))+',50,0')
-    #     nodes[sat_id] = node
-    #     node = net.addSwitch(swi_name)
-    #     nodes[swi_id] = node
-    #     net.addLink(nodes[sat_id], nodes[swi_id])
-
-    # # Creating base station nodes: each base station is constructed with one host and one switch
-    # for bas,i in zip(bass,range(len(sats)+1,len(sats)+len(bass)+1)):
-    #     bas_name = 'h'+str(i)
-    #     # Base station host
-    #     bas_id = str(bas['id'])+'-bas'
-    #     print(bas_name, bas_id)
-    #     swi_name = 's'+str(i)
-    #     # Base station switch
-    #     swi_id = str(bas['id'])+'-swi'
-    #     node = net.addHost(bas_name, position=str(50+(30*i))+',150,0')
-    #     nodes[bas_id] = node
-    #     node = net.addSwitch(swi_name)
-    #     nodes[swi_id] = node
-    #     net.addLink(nodes[bas_id], nodes[swi_id])
-
-    # # # Creating links
-    # # for lnk in lnks:
-    # #     src_id = str(lnk['Config'][0]['srcType'])+str(lnk['Config'][0]['srcID'])
-    # #     des_id = str(lnk['Config'][1]['destType'])+str(lnk['Config'][1]['destID'])
-    # #     print(src_id, des_id)
-    # #     node_s = nodes[src_id]
-    # #     node_d = nodes[des_id]
-    # #     net.addLink(node_s, node_d, bw=100)
-    # #     tcInfo.setdefault(src_id+'->'+des_id, {})
-    # #     break
-
-    # # Creating default controller to the network
-    # node = net.addController('c0')
-    # nodes['c0'] = node
-
-    # # print("*** Loading event into Controller ***")
-    # # # Parsing the JSON file
-    # # with open('configs/gpsSCNSimulationscripv2t.json', 'r') as read_file:
-    # #     events = json.load(read_file)
-    # # linkEvents = events['SimScript']['scnLinkEvnt']
-    # # appEvents = events['SimScript']['scnappEvnt']
-    # # # Storing all the events info
-    # # actList = {}
-    # # # Link event: format [time, [source, destination, event type, parameter]]
-    # # for evt in linkEvents:
-    # #     for act in evt['actionlist']:
-    # #         actList.setdefault(str(act['Time']), []).append([str(evt['srcType'])+str(evt['srcID']), str(evt['destType'])+str(evt['destID']), str(act['Type']), str(act['para1'])])
-    # # # Application event: format [time, [application name, event type, parameter]]
-    # # for evt in appEvents:
-    # #     for act in evt['actionlist']:
-    # #         actList.setdefault(str(act['Time']), []).append([str(evt['AppName']), str(act['Type']), str(act['para1'])])
-    # # # Sorting the event list based on the timestamp
-    # # actList = sorted(actList.items(), key=lambda x:float(x[0]))
-    # # print actList
-
-    # print("*** Starting network emulation ***")
-    # # Starting the Mininet emulation network
-    # net.start()
-
-    # Creating and starting the controller logic thread
-    # control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
-    # control_thread.start()
-    # control_thread.join()
+    Creating and starting the controller logic thread
+    control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
+    control_thread.start()
+    control_thread.join()
 
     print("*** Loading the events for emulation ***\n")
     events = requests.get('http://192.168.1.3:8888/api/data/applications')
@@ -212,22 +223,23 @@ def mobileNet(name, configFile):
     evts_tracker = [0 for _ in range(len(apps))]
     stime = datetime.datetime.strptime(sorted(apps, key=lambda e:e['startTime'])[0]['startTime'], '%Y-%m-%d %H:%M:%S.%f')
     etime = datetime.datetime.strptime(sorted(apps, key=lambda e:e['endTime'])[-1]['endTime'], '%Y-%m-%d %H:%M:%S.%f')
-    print stime
-    print etime
 
     while stime < etime:
     	evts = []
     	for evt, app in enumerate(apps):
     		for index, event in enumerate(app['events'][evt:]):
     			curtime = datetime.datetime.strptime(event['timetick'], '%Y-%m-%dT%H:%M:%S.%f')
-    			if stime >= curtime and stime <= (curtime+datetime.timedelta(seconds=30)):
-    				linkUpdate(net, nodes, event, evts, app['protocol'])
-    				evts_tracker[evt] += (index+1)
-    				break
+                if stime >= curtime and stime <= (curtime+datetime.timedelta(seconds=30)):
+                    linkUpdate(net, nodes, event, evts, app['protocol'], links)
+                    evts_tracker[evt] += (index+1)
+                    break
     	control_thread = threading.Thread(target=linkEval,args=(net, nodes, evts))
 	    control_thread.start()
 	    control_thread.join()
+        print evts
     	stime += datetime.timedelta(seconds=30)
+        net.delLinkBetween(nodes[l[0]], nodes[l[1]]) for l in links
+        links[:] = []
   
     exit(1)
 
