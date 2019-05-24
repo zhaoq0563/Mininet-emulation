@@ -11,6 +11,7 @@ import time, datetime, threading, os, json, collections, sys, requests, socket
 
 HOST = '192.168.88.131'
 PORT = 65432
+SOL  = 299792.458
 
 """Controller function"""
 
@@ -58,59 +59,95 @@ def controllerLogic(net, nodes, tcInfo, actList):
 
 """Helper function"""
 
-# def linkUpdate(net, nodes, event, evts, protocol):
-def linkUpdate(net, nodes, links, event, evts, protocol):
+def delayUpdate(snode, dnode, delay):
+    links = snode.connectionsTo(dnode)
+
+    srcLink = links[0][1]
+    dstLink = links[0][1]
+
+    srcLink.config(**{ 'delay' : str(delay)+'ms' })
+    dstLink.config(**{ 'delay' : str(delay)+'ms' })
+
+
+def linkUpdate(net, nodes, links, app, event, evts, protocol):
     print "stage ---------------\n\n"
 	# Update links
     path = json.loads(event['path'])['pathById']
+    dist = json.loads(event['distance'])
     for i in range(len(path)-1):
-        snode = nodes[path[i]+'-swi']
-        dnode = nodes[path[i+1]+'-swi']
-        print path[i]+'-swi' + '    ---->>     ' + path[i+1]+'-swi'
-		net.addLink(snode, dnode, bw=100)
-        links.append((path[i]+'-swi', path[i+1]+'-swi'))
+        snode = nodes[str(path[i])+'-swi']
+        dnode = nodes[str(path[i+1])+'-swi']
+        delay = float(dist[i]) / SOL
+        print path[i]+'-swi' + '    ---->>     ' + path[i+1]+'-swi'+'  -----with delay: '+str(delay)
+        # net.addLink(snode, dnode, bw=100, delay=str(delay)+'ms')
+        delayUpdate(snode, dnode, delay)
+        # links.append((str(path[i])+'-swi', str(path[i+1])+'-swi'))
 
 	# Update event detail for emulation
 	evt_detail = {}
-	evt_detail['src'] = path[0]
-	evt_detail['dst'] = path[-1]
-	evt_detail['prc'] = protocol
-	evt_detail['tra'] = event['throughput']
-	evts.append(evt_detail)
+    evt_detail['app'] = app
+    evt_detail['src'] = str(path[0])
+    evt_detail['dst'] = str(path[-1])
+    evt_detail['prc'] = str(protocol)
+    evt_detail['tra'] = str(event['throughput'])
+    evt_detail['tim'] = str(event['timetick'])
+    evts.append(evt_detail)
 
 
 def linkEval(net, nodes, evts):
-    for evt in evts:
+    for index, evt in enumerate(evts):
         snode = nodes[evt['src']+'-host']
         dnode = nodes[evt['dst']+'-host']
-        dnode.cmdPrint('iperf -s &')
+        # dnode.cmdPrint('ping -c1 ', snode.IP())
+        dnode.cmdPrint('iperf -s > output_'+str(index)+' &') if evt['prc']=='TCP' else dnode.cmdPrint('iperf -u -s > output_'+str(index)+' &')
+        dnode.cmdPrint('pid_'+str(index)+'=$!')
         dstIp = dnode.IP()
-        snode.cmdPrint('iperf -c'+dstIp+' -t 30')
+        snode.cmdPrint('iperf -c'+dstIp+' &') if evt['prc']=='TCP' else snode.cmdPrint('iperf -c'+dstIp+' -u -b '+evt['tra']+'M &')
     time.sleep(30)
-	
+    for index, evt in enumerate(evts):
+        snode = nodes[evt['src']+'-host']
+        dnode = nodes[evt['dst']+'-host']
+        dnode.cmdPrint('kill -9 $pid_'+str(index))
+        # grab the results
+        res         = {}
+        res['app']  = evt['app']
+        res['time'] = evt['tim']
+        f = open('output_'+str(index), 'r')
+        for line in f:
+            if 'MBytes' in line.split():
+                resStr = line.split()
+                for index, item in enumerate(resStr):
+                    if '0.0-' in item:
+                        res['applicationDelay'] = float(item[4:])
+                    if item == 'Mbits/sec':
+                        res['goodput'] = float(resStr[index-1])
+        f.close()
+        headers  = {'Content-Type': 'application/json'}
+        response = requests.post(url=' http://192.168.1.3:8888/api/mininet/update', headers=headers, data=json.dumps(res))
+
 
 """Main function of the emulation"""
 
 def mobileNet(name, configFile):
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((HOST, PORT))
+    # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # s.bind((HOST, PORT))
 
-    instr = ''
-    while instr != 'start':
-        print("*** Waiting for instructions ... ***")
-        s.listen(5)
-        conn, addr = s.accept()
-        # print('Connected by ', addr)
-        while True:
-            instr = conn.recv(1024)
-            # print instr
-            if not instr:
-                print('Connection lost...')
-                break
-            if instr == 'start':
-                break
-    s.close()
+    # instr = ''
+    # while instr != 'start':
+    #     print("*** Waiting for instructions ... ***")
+    #     s.listen(5)
+    #     conn, addr = s.accept()
+    #     # print('Connected by ', addr)
+    #     while True:
+    #         instr = conn.recv(1024)
+    #         # print instr
+    #         if not instr:
+    #             print('Connection lost...')
+    #             break
+    #         if instr == 'start':
+    #             break
+    # s.close()
 
     print("*** Starting to initialize the emulation topology ***")
     topos = requests.get('http://192.168.1.3:8888/api/settings/init')
@@ -131,7 +168,7 @@ def mobileNet(name, configFile):
     # usrs = paras['SatcomScnDef']['userDef']
     # lnks = paras['SatcomScnDef']['scnLinkDef']
 
-    # Initializing the Mininet network
+    # # Initializing the Mininet network
     net = Mininet(controller=Controller, link=TCLink, autoSetMacs=True)
 
     print("*** Creating nodes ***")
@@ -205,14 +242,31 @@ def mobileNet(name, configFile):
     # actList = sorted(actList.items(), key=lambda x:float(x[0]))
     # print actList
 
+    # Temp implementation for getting the topology once for all
+    events = requests.get('http://192.168.1.3:8888/api/data/applications')
+    if events.status_code != 200:
+        # This means something went wrong
+        raise ApiError('GET /tasks/ {}'.format(events.status_code))
+    tpath = json.loads(events.json()[0]['events'][0]['path'])['pathById']
+    tdist = json.loads(events.json()[0]['events'][0]['distance'])
+    for i in range(len(tpath)-1):
+        snode = nodes[str(tpath[i])+'-swi']
+        dnode = nodes[str(tpath[i+1])+'-swi']
+        print tdist
+        delay = float(tdist[i]) / SOL
+        print tpath[i]+'-swi' + '    ---->>     ' + tpath[i+1]+'-swi'+'  -----with delay: '+str(delay)
+        net.addLink(snode, dnode, bw=100, delay=str(delay)+'ms')
+
     print("*** Starting network emulation ***")
     # Starting the Mininet emulation network
     net.start()
 
-    Creating and starting the controller logic thread
-    control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
-    control_thread.start()
-    control_thread.join()
+    # # Creating and starting the controller logic thread
+    # control_thread = threading.Thread(target=controllerLogic,args=(net, nodes, tcInfo, actList))
+    # control_thread.start()
+    # control_thread.join()
+
+    # CLI(net)
 
     print("*** Loading the events for emulation ***\n")
     events = requests.get('http://192.168.1.3:8888/api/data/applications')
@@ -227,23 +281,26 @@ def mobileNet(name, configFile):
     while stime < etime:
     	evts = []
     	for evt, app in enumerate(apps):
-    		for index, event in enumerate(app['events'][evt:]):
-    			curtime = datetime.datetime.strptime(event['timetick'], '%Y-%m-%dT%H:%M:%S.%f')
+            for index, event in enumerate(app['events'][evts_tracker[evt]:]):
+                curtime = datetime.datetime.strptime(event['timetick'], '%Y-%m-%dT%H:%M:%S.%f')
+                # print 'cur:'+str(curtime)
+                # print 'stime:'+str(stime)
+                # print event
                 if stime >= curtime and stime <= (curtime+datetime.timedelta(seconds=30)):
-                    linkUpdate(net, nodes, event, evts, app['protocol'], links)
+                    linkUpdate(net, nodes, links, str(app['appName']), event, evts, app['protocol'])
                     evts_tracker[evt] += (index+1)
                     break
-    	control_thread = threading.Thread(target=linkEval,args=(net, nodes, evts))
-	    control_thread.start()
-	    control_thread.join()
+        control_thread = threading.Thread(target=linkEval,args=(net, nodes, evts))
+        control_thread.start()
+        control_thread.join()
         print evts
-    	stime += datetime.timedelta(seconds=30)
-        net.delLinkBetween(nodes[l[0]], nodes[l[1]]) for l in links
-        links[:] = []
+        stime += datetime.timedelta(seconds=30)
+        # for l in links:
+        #     net.delLinkBetween(nodes[l[0]], nodes[l[1]]) 
+        # links[:] = []
   
-    exit(1)
 
-    CLI(net)
+    # CLI(net)
     # time.sleep(5)
     # nodes['38833-sat'].cmdPrint('iperf -s &')
     # nodes['39533-sat'].cmdPrint('iperf -c 10.0.0.22 -t 10')
