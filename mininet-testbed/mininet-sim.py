@@ -9,7 +9,8 @@ from mininet.log import setLogLevel, info
 from subprocess import call
 import time, datetime, threading, os, json, collections, sys, requests, socket
 
-HOST = '192.168.88.131'
+# HOST = '192.168.88.131'
+HOST = 'localhost'
 PORT = 65432
 SOL  = 299792.458
 
@@ -91,7 +92,8 @@ def linkUpdate(net, nodes, links, app, event, evts, protocol):
     evt_detail['src'] = str(path[0])
     evt_detail['dst'] = str(path[-1])
     evt_detail['prc'] = str(protocol)
-    evt_detail['tra'] = int(event['throughput'])
+    evt_detail['tra'] = int(event['datavol'])
+    evt_detail['fak'] = int(event['throughput'])
     evt_detail['tim'] = str(event['timetick'])
     evt_detail['dly'] = float(sumDelay)
     evts.append(evt_detail)
@@ -115,7 +117,7 @@ def linkEval(net, nodes, evts):
         res             = {}
         res['app']      = evt['app']
         res['time']     = evt['tim']
-        res['tput']     = evt['tra']
+        res['tput']     = evt['fak']
         res['pdelay']   = evt['dly']
         f = open('output_'+str(index), 'r')
         for line in f:
@@ -129,7 +131,7 @@ def linkEval(net, nodes, evts):
         f.close()
         headers  = {'Content-Type': 'application/json'}
         print 'send the res-------------'+str(evt['tra'])+' '+str(res['applicationDelay'])+'\n'
-        response = requests.post(url=' http://192.168.1.3:8888/api/mininet/update', headers=headers, data=json.dumps(res))
+        response = requests.post(url=' http://localhost:8888/api/mininet/update', headers=headers, data=json.dumps(res))
 
 
 """Main function of the emulation"""
@@ -141,7 +143,7 @@ def mobileNet(name, configFile):
     s.bind((HOST, PORT))
 
     instr = ''
-    while instr != 'start':
+    while instr != 's':
         print("*** Waiting for instructions ... ***")
         s.listen(5)
         conn, addr = s.accept()
@@ -152,12 +154,12 @@ def mobileNet(name, configFile):
             if not instr:
                 print('Connection lost...')
                 break
-            if instr == 'start':
+            if instr == 's':
                 break
     s.close()
 
     print("*** Starting to initialize the emulation topology ***")
-    topos = requests.get('http://192.168.1.3:8888/api/settings/init')
+    topos = requests.get('http://localhost:8888/api/settings/init')
     if topos.status_code != 200:
         # This means something went wrong.
         raise ApiError('GET /tasks/ {}'.format(topos.status_code))
@@ -254,7 +256,7 @@ def mobileNet(name, configFile):
     s.bind((HOST, PORT))
 
     instr = ''
-    while instr != 'events':
+    while instr != 'e':
         print("*** Waiting for instructions ... ***")
         s.listen(5)
         conn, addr = s.accept()
@@ -265,12 +267,12 @@ def mobileNet(name, configFile):
             if not instr:
                 print('Connection lost...')
                 break
-            if instr == 'events':
+            if instr == 'e':
                 break
     s.close()
 
     # Temp implementation for getting the topology once for all
-    events = requests.get('http://192.168.1.3:8888/api/data/applications')
+    events = requests.get('http://localhost:8888/api/data/applications')
     if events.status_code != 200:
         # This means something went wrong
         raise ApiError('GET /tasks/ {}'.format(events.status_code))
@@ -297,7 +299,7 @@ def mobileNet(name, configFile):
     # CLI(net)
 
     print("*** Loading the events for emulation ***\n")
-    events = requests.get('http://192.168.1.3:8888/api/data/applications')
+    events = requests.get('http://localhost:8888/api/data/applications')
     if events.status_code != 200:
         # This means something went wrong
         raise ApiError('GET /tasks/ {}'.format(events.status_code))
