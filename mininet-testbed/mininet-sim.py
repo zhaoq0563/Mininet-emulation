@@ -9,9 +9,12 @@ from mininet.log import setLogLevel, info
 from subprocess import call
 import time, datetime, threading, os, json, collections, sys, requests, socket
 
-# HOST = '192.168.88.131'
-HOST = 'localhost'
-PORT = 65432
+# SOCK_HOST = '192.168.88.131'
+SOCK_HOST = 'localhost'
+SOCK_PORT = 65432
+DATA_HOST = '192.168.1.3'
+#DATA_HOST = 'localhost'
+DATA_PORT = '8888'
 SOL  = 299792.458
 
 """Controller function"""
@@ -60,6 +63,27 @@ def controllerLogic(net, nodes, tcInfo, actList):
 
 """Helper function"""
 
+def initSocket(event):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind((SOCK_HOST, SOCK_PORT))
+
+    instr = ''
+    while instr != event:
+        print("*** Waiting for instructions ... ***")
+        s.listen(5)
+        conn, addr = s.accept()
+        # print('Connected by ', addr)
+        while True:
+            instr = conn.recv(1024)
+            if not instr:
+                print('Connection lost...')
+                break
+            if instr == event:
+                break
+    s.close()
+
+
 def delayUpdate(snode, dnode, delay):
     links = snode.connectionsTo(dnode)
 
@@ -71,7 +95,7 @@ def delayUpdate(snode, dnode, delay):
 
 
 def linkUpdate(net, nodes, links, app, event, evts, protocol):
-    print "stage ---------------\n\n"
+    #print "stage updating link delays ---------------\n\n"
 	# Update links
     path = json.loads(event['path'])['pathById']
     dist = json.loads(event['distance'])
@@ -81,7 +105,7 @@ def linkUpdate(net, nodes, links, app, event, evts, protocol):
         dnode = nodes[str(path[i+1])+'-swi']
         delay = float(dist[i]) / SOL
         sumDelay += delay
-        print path[i]+'-swi' + '    ---->>     ' + path[i+1]+'-swi'+'  -----with delay: '+str(delay)
+        #print path[i]+'-swi' + '    ---->>     ' + path[i+1]+'-swi'+'  -----with delay: '+str(delay)+'\n'
         # net.addLink(snode, dnode, bw=100, delay=str(delay)+'ms')
         delayUpdate(snode, dnode, delay)
         # links.append((str(path[i])+'-swi', str(path[i+1])+'-swi'))
@@ -99,24 +123,25 @@ def linkUpdate(net, nodes, links, app, event, evts, protocol):
     evts.append(evt_detail)
 
 
-def linkEval(net, nodes, evts):
+def linkEval(net, nodes, evts, t):
+    #print "stage evaluating links ---------------\n\n"
     for index, evt in enumerate(evts):
         snode = nodes[evt['src']+'-host']
         dnode = nodes[evt['dst']+'-host']
-        # dnode.cmdPrint('ping -c1 ', snode.IP())
         dnode.cmdPrint('iperf -s > output_'+str(index)+' &') if evt['prc']=='TCP' else dnode.cmdPrint('iperf -u -s > output_'+str(index)+' &')
-        dnode.cmdPrint('pid_'+str(index)+'=$!')
+        dnode.cmd('pid_'+str(index)+'=$!')
         dstIp = dnode.IP()
-        snode.cmdPrint('iperf -c '+dstIp+' -n '+str(evt['tra'])+'M &') if evt['prc']=='TCP' else snode.cmdPrint('iperf -c '+dstIp+' -u -b 100M -n '+str(evt['tra'])+'M &')
+        snode.cmdPrint('iperf -c '+dstIp+' -n '+str(evt['tra'])+'M &') if evt['prc']=='TCP' else snode.cmdPrint('iperf -c '+dstIp+' -u -b 100M -n '+str(evt['tra'])+'M > /dev/null 2>&1 &')
     time.sleep(15)
     for index, evt in enumerate(evts):
-        snode = nodes[evt['src']+'-host']
         dnode = nodes[evt['dst']+'-host']
-        dnode.cmdPrint('kill -9 $pid_'+str(index))
+        dnode.cmd('kill -9 $pid_'+str(index))
+    print "stage sending results back ---------------\n\n"
+    for index, evt in enumerate(evts):
         # grab the results
         res             = {}
         res['app']      = evt['app']
-        res['time']     = evt['tim']
+        res['time']     = str(t)
         res['tput']     = evt['fak']
         res['pdelay']   = evt['dly']
         f = open('output_'+str(index), 'r')
@@ -129,37 +154,20 @@ def linkEval(net, nodes, evts):
                     if item == 'Mbits/sec':
                         res['goodput'] = float(resStr[index-1])
         f.close()
+        print 'send the res of '+res['app']+' at time '+res['time']+'------------- '+str(res['goodput'])+' '+str(res['applicationDelay'])+' '+str(res['tput'])+' '+str(res['pdelay'])+'\n'
         headers  = {'Content-Type': 'application/json'}
-        print 'send the res-------------'+str(evt['tra'])+' '+str(res['applicationDelay'])+'\n'
-        response = requests.post(url=' http://localhost:8888/api/mininet/update', headers=headers, data=json.dumps(res))
+        response = requests.post(url=' http://'+DATA_HOST+':'+DATA_PORT+'/api/mininet/update', headers=headers, data=json.dumps(res))
+        res.clear()
 
 
 """Main function of the emulation"""
 
 def mobileNet(name, configFile):
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((HOST, PORT))
-
-    instr = ''
-    while instr != 's':
-        print("*** Waiting for instructions ... ***")
-        s.listen(5)
-        conn, addr = s.accept()
-        # print('Connected by ', addr)
-        while True:
-            instr = conn.recv(1024)
-            # print instr
-            if not instr:
-                print('Connection lost...')
-                break
-            if instr == 's':
-                break
-    s.close()
+    initSocket('s')
 
     print("*** Starting to initialize the emulation topology ***")
-    topos = requests.get('http://localhost:8888/api/settings/init')
+    topos = requests.get('http://'+DATA_HOST+':'+DATA_PORT+'/api/settings/init')
     if topos.status_code != 200:
         # This means something went wrong.
         raise ApiError('GET /tasks/ {}'.format(topos.status_code))
@@ -251,41 +259,25 @@ def mobileNet(name, configFile):
     # actList = sorted(actList.items(), key=lambda x:float(x[0]))
     # print actList
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((HOST, PORT))
-
-    instr = ''
-    while instr != 'e':
-        print("*** Waiting for instructions ... ***")
-        s.listen(5)
-        conn, addr = s.accept()
-        # print('Connected by ', addr)
-        while True:
-            instr = conn.recv(1024)
-            # print instr
-            if not instr:
-                print('Connection lost...')
-                break
-            if instr == 'e':
-                break
-    s.close()
+    initSocket('e')
 
     # Temp implementation for getting the topology once for all
-    events = requests.get('http://localhost:8888/api/data/applications')
+    events = requests.get('http://'+DATA_HOST+':'+DATA_PORT+'/api/data/applications')
     if events.status_code != 200:
         # This means something went wrong
         raise ApiError('GET /tasks/ {}'.format(events.status_code))
-    
-    tpath = json.loads(events.json()[0]['events'][0]['path'])['pathById']
-    tdist = json.loads(events.json()[0]['events'][0]['distance'])
-    for i in range(len(tpath)-1):
-        snode = nodes[str(tpath[i])+'-swi']
-        dnode = nodes[str(tpath[i+1])+'-swi']
-        print tdist
-        delay = float(tdist[i]) / SOL
-        print tpath[i]+'-swi' + '    ---->>     ' + tpath[i+1]+'-swi'+'  -----with delay: '+str(delay)
-        net.addLink(snode, dnode, bw=100, delay=str(delay)+'ms')
+    for app in events.json():
+        tpath = json.loads(app['events'][0]['path'])['pathById']
+        tdist = json.loads(app['events'][0]['distance'])
+        for i in range(len(tpath)-1):
+            snode = nodes[str(tpath[i])+'-swi']
+            dnode = nodes[str(tpath[i+1])+'-swi']
+            key   = (str(tpath[i])+'-swi', str(tpath[i+1])+'-swi')
+            delay = float(tdist[i]) / SOL
+            print tpath[i]+'-swi' + '    ---->>     ' + tpath[i+1]+'-swi'+'  ----- with delay: '+str(delay)
+            if key not in links and key[::-1] not in links:
+                net.addLink(snode, dnode, bw=100, delay=str(delay)+'ms')
+                links.append(key)
 
     print("*** Starting network emulation ***")
     # Starting the Mininet emulation network
@@ -299,7 +291,7 @@ def mobileNet(name, configFile):
     # CLI(net)
 
     print("*** Loading the events for emulation ***\n")
-    events = requests.get('http://localhost:8888/api/data/applications')
+    events = requests.get('http://'+DATA_HOST+':'+DATA_PORT+'/api/data/applications')
     if events.status_code != 200:
         # This means something went wrong
         raise ApiError('GET /tasks/ {}'.format(events.status_code))
@@ -313,17 +305,13 @@ def mobileNet(name, configFile):
     	for evt, app in enumerate(apps):
             for index, event in enumerate(app['events'][evts_tracker[evt]:]):
                 curtime = datetime.datetime.strptime(event['timetick'], '%Y-%m-%dT%H:%M:%S.%f')
-                # print 'cur:'+str(curtime)
-                # print 'stime:'+str(stime)
-                # print event
                 if stime >= curtime and stime <= (curtime+datetime.timedelta(seconds=15)):
                     linkUpdate(net, nodes, links, str(app['appName']), event, evts, app['protocol'])
                     evts_tracker[evt] += (index+1)
                     break
-        control_thread = threading.Thread(target=linkEval,args=(net, nodes, evts))
+        control_thread = threading.Thread(target=linkEval,args=(net, nodes, evts, stime))
         control_thread.start()
         control_thread.join()
-        print evts
         stime += datetime.timedelta(seconds=15)
         # for l in links:
         #     net.delLinkBetween(nodes[l[0]], nodes[l[1]]) 
@@ -335,9 +323,6 @@ def mobileNet(name, configFile):
     # nodes['38833-sat'].cmdPrint('iperf -s &')
     # nodes['39533-sat'].cmdPrint('iperf -c 10.0.0.22 -t 10')
     # time.sleep(15)
-
-
-
 
     # print "*** Addressing for station ***"
     # for i in range(1, numOfSPSta+numOfMPSta+1):
@@ -435,6 +420,7 @@ def mobileNet(name, configFile):
     # o.close()
 
     print("*** Stopping network ***")
+    os.system('rm -rf output_*')
     net.stop()
 
 
