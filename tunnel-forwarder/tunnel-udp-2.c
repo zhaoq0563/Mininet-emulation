@@ -38,6 +38,8 @@ pthread_t tapTonet_id, netTotap_id;
 struct fds {
   int *tap;
   int *net;
+  struct sockaddr_in *servaddr;
+  struct sockaddr_in *clitaddr;
 };
 
 struct thdPar {
@@ -125,80 +127,59 @@ int tun_alloc(char *dev, int flags) {
  * cread: read routine that checks for errors and exits if an error is    *
  *        returned.                                                       *
  **************************************************************************/
-int cread(int fd, char *buf, int n){
+int cread(int fd, struct sockaddr_in *si, char *buf, int n){
   
   int nread;
+  socklen_t len;
 
-  if((nread=read(fd, buf, n)) < 0){
-    perror("Reading data");
-    exit(1);
-  }
+  nread = recvfrom(fd, buf, n, 0, si, &len);
+
+  // if (nread == -1 && errno != EINTR){
+  //     perror("Reading data");
+  //     exit(1);
+  // }
+
   return nread;
-}
-
-/**************************************************************************
- * cread: read routine that checks for errors and exits if an error is    *
- *        returned.                                                       *
- **************************************************************************/
-int tread(int fd, struct mmsghdr *msgs, unsigned int n, int flags, struct timespec *timeout){
-  
-  int nread;
-
-  if((nread=recvmmsg(fd, msgs, n, flags, timeout)) < 0){
-    perror("Reading data");
-    exit(1);
-  }
-  return nread;
-}
-
-/**************************************************************************
- * crecv: "non-blocking" recv routine for continuously receiving data     *
- *        from interfaces.                                                *
- **************************************************************************/
-int crecv(int fd, char *buf, int n){
-  
-  int nrecv;
-
-  /* keep reading the data from the given interface */
-  /* enforce returning 0 if no incoming data */
-  /* otherwise, return the size of the incoming data */
-  nrecv=read(fd, buf, n);
-  if (nrecv == -1) return 0;
-  else return nrecv;
 }
 
 /**************************************************************************
  * cwrite: write routine that checks for errors and exits if an error is  *
  *         returned.                                                      *
  **************************************************************************/
-int cwrite(int fd, char *buf, int n){
+int cwrite(int fd, struct sockaddr_in *si, char *buf, int n){
   
-  int nwrite;
-
-  if((nwrite=write(fd, buf, n)) < 0){
-    perror("Writing data");
-    exit(1);
-  }
+  int nwrite = sendto(fd, buf, n, 0, si, sizeof(*si));
   return nwrite;
 }
 
 /**************************************************************************
- * read_n: ensures we read exactly n bytes, and puts them into "buf".     *
- *         (unless EOF, of course)                                        *
+ * tapread: read routine from tap that checks for errors and exits if an  *
+ *          error is returned.                                            *
  **************************************************************************/
-int read_n(int fd, char *buf, int n) {
+int tapread(int fd, char *buf, int n){
+  
+  int nread;
 
-  int nread, left = n;
-
-  while(left > 0) {
-    if ((nread = cread(fd, buf, left)) == 0){
-      return 0 ;      
-    }else {
-      left -= nread;
-      buf += nread;
-    }
+  if((nread=read(fd, buf, n)) < 0){
+    perror("Tap reading data");
+    exit(1);
   }
-  return n;  
+  return nread;
+}
+
+/**************************************************************************
+ * tapwrite: write routine to tap that checks for errors and exits if an  *
+ *           error is returned.                                           *
+ **************************************************************************/
+int tapwrite(int fd, char *buf, int n){
+  
+  int nwrite;
+
+  if((nwrite=write(fd, buf, n)) < 0){
+    perror("Tap writing data");
+    exit(1);
+  }
+  return nwrite;
 }
 
 /**************************************************************************
@@ -213,8 +194,7 @@ void *sendToTap(void *arg) {
   printf("thread %d will sleep for %ld usecs!\n", (int)pthread_self(), delay);
   if (delay > 0) usleep(delay);
 
-  do_debug("NET2TAP: Read %d bytes from the network\n", *(data->plength));
-  nwrite = cwrite(*(data->net), data->buffer, *(data->plength));
+  nwrite = tapwrite(*(data->net), data->buffer, *(data->plength));
   do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
 
   /* free the space */
@@ -252,8 +232,9 @@ void pthread_out(int signo)
 void* tapTonet_c(void* input)
 {
   do_debug("tap to net thread is up!\n");
-  int       tap_fd = *((struct fds*)input)->tap;
-  int       net_fd = *((struct fds*)input)->net;
+  int             tap_fd = *((struct fds*)input)->tap;
+  int             net_fd = *((struct fds*)input)->net;
+  struct sockaddr_in *si = ((struct fds*)input)->servaddr;
   uint16_t  nread, nwrite, plength;
   char      buffer[BUFSIZE];
 
@@ -262,27 +243,74 @@ void* tapTonet_c(void* input)
 
   while(1)
   {
-    /* "non-blocking" read the data from tap interface */
-    nread = crecv(tap_fd, buffer, BUFSIZE);
+    /* read the data from tap interface */
+    nread = tapread(tap_fd, buffer, BUFSIZE);
+    do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
-    if (nread != 0) {
-      do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
+    /* send real data + timestamp (16 bytes) to network */
+    /* update the buffer */
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    itoc(t.tv_sec, &nread, buffer);
+    itoc(t.tv_usec, &nread, buffer);
 
-      /* send real data + timestamp (16 bytes) to network */
-      /* update the buffer */
-      struct timeval t;
-      gettimeofday(&t, NULL);
-      itoc(t.tv_sec, &nread, buffer);
-      itoc(t.tv_usec, &nread, buffer);
+    /* forward the data to tunnel */
+    nwrite  = cwrite(net_fd, si, buffer, nread);
+    do_debug("TAP2NET: Written %d bytes to the network\n", nwrite);
+  }
+}
 
-      /* update the length of the total data */
-      plength = htons(nread);
+/**************************************************************************
+ * netTotap_c: Net interface to Tap interface pthread.                      *
+ **************************************************************************/
+void* netTotap_c(void* input)
+{
+  do_debug("net to tap thread is up!\n");
 
-      /* forward the data to tunnel */
-      nwrite  = cwrite(net_fd, (char *)&plength, sizeof(plength));
-      nwrite  = cwrite(net_fd, buffer, nread);
-      do_debug("TAP2NET: Written %d bytes to the network\n", nwrite);
-    } else continue;
+  int             tap_fd = *((struct fds*)input)->tap;
+  int             net_fd = *((struct fds*)input)->net;
+  struct sockaddr_in *si = ((struct fds*)input)->servaddr;
+  uint16_t nread, nwrite;
+  struct   timeval time_send, time_receive, time_delay;
+
+  pthread_t tid;
+  pthread_attr_t a;
+  pthread_attr_init(&a);
+  pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
+  
+  /* register SIGPIPE signal */
+  signal(SIGPIPE,signal_pipe);
+
+  while(1)
+  {
+    uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
+    char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
+    long int   *thr_time = (long int *)malloc(sizeof(long int));
+
+    /* read packet */
+    nread = cread(net_fd, si, buffer, BUFSIZE);
+    if (nread < 0) continue;
+    do_debug("NET2TAP: Read %d bytes from the network\n", nread);
+
+    /* get the send time for the packet */
+    time_send.tv_sec  = ctoi(nread-16, buffer);
+    time_send.tv_usec = ctoi(nread-8, buffer);
+
+    /* calculate the delay */
+    gettimeofday(&time_receive, NULL);
+    timersub(&time_receive, &time_send, &time_delay);
+    *thr_time = time_delay.tv_usec;
+
+    /* update length of the received data */
+    *newplength = nread-16;
+
+    struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
+    tp->net     = &tap_fd;
+    tp->plength = newplength;
+    tp->buffer  = buffer;
+    tp->time    = thr_time;
+
+    pthread_create(&tid, &a, sendToTap, (void *)tp);
   }
 }
 
@@ -292,28 +320,29 @@ void* tapTonet_c(void* input)
 void* tapTonet_s(void* input)
 {
   do_debug("tap to net thread is up!\n");
-  int       tap_fd = *((struct fds*)input)->tap;
-  int       net_fd = *((struct fds*)input)->net;
+  int             tap_fd = *((struct fds*)input)->tap;
+  int             net_fd = *((struct fds*)input)->net;
+  struct sockaddr_in *si = ((struct fds*)input)->clitaddr;
   uint16_t  nread, nwrite, plength;
   char      buffer[BUFSIZE];
 
+  /* construct the dummy packet */
   signal(SIGQUIT, pthread_out);
 
   while(1)
   {
-    nread = cread(tap_fd, buffer, BUFSIZE);
+    nread = tapread(tap_fd, buffer, BUFSIZE);
+    do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
+    /* send real data + timestamp (16 bytes) to network */
+    /* update the buffer */
     struct timeval t;
     gettimeofday(&t, NULL);
     itoc(t.tv_sec, &nread, buffer);
     itoc(t.tv_usec, &nread, buffer);
-   
-    do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
     /* write length + packet */
-    plength = htons(nread);
-    nwrite = cwrite(net_fd, (char *)&plength, sizeof(plength));
-    nwrite = cwrite(net_fd, buffer, nread);
+    nwrite = cwrite(net_fd, si, buffer, nread);
     
     do_debug("TAP2NET: Written %d bytes to the network\n", nwrite);
   }
@@ -322,57 +351,46 @@ void* tapTonet_s(void* input)
 /**************************************************************************
  * netTotap_s: Net interface to Tap interface pthread.                      *
  **************************************************************************/
-/* thread version */
 void* netTotap_s(void* input)
 {
   do_debug("net to tap thread is up!\n");
 
   int      tap_fd = *((struct fds*)input)->tap;
   int      net_fd = *((struct fds*)input)->net;
-  uint16_t nread, nwrite, plength;
+  struct sockaddr_in *si = ((struct fds*)input)->clitaddr;
+  uint16_t nread, nwrite;
   struct   timeval time_send, time_receive, time_delay;
 
   pthread_t tid;
   pthread_attr_t a;
   pthread_attr_init(&a);
   pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
-
-  // FILE *fp_rec = fopen("delay_time_cTos.txt", "w");
   
   /* register SIGPIPE signal */
-  signal(SIGPIPE, signal_pipe);
+  signal(SIGPIPE,signal_pipe);
 
   while(1)
   {
-    /* keep reading the data from net interface */
-    nread = read_n(net_fd, (char *)&plength, sizeof(plength));
-    do_debug("Data length: %d\n", ntohs(plength));
-
-    if (nread == 0) {
-       /* ctrl-c at the other end */
-      break;
-    }
-
     uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
     char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
     long int   *thr_time = (long int *)malloc(sizeof(long int));
 
     /* read packet */
-    nread = read_n(net_fd, buffer, ntohs(plength));
+    nread = cread(net_fd, si, buffer, BUFSIZE);
+    if (nread < 0) continue;
+    do_debug("NET2TAP: Read %d bytes from the network\n", nread);
 
     /* get the send time for the packet */
-    time_send.tv_sec  = ctoi(ntohs(plength)-16, buffer);
-    time_send.tv_usec = ctoi(ntohs(plength)-8, buffer);
+    time_send.tv_sec  = ctoi(nread-16, buffer);
+    time_send.tv_usec = ctoi(nread-8, buffer);
 
     /* calculate the delay */
     gettimeofday(&time_receive, NULL);
     timersub(&time_receive, &time_send, &time_delay);
-    // fprintf(fp_rec, "%ld\n", time_delay.tv_usec);
-    // fflush(fp_rec);
     *thr_time = time_delay.tv_usec;
 
     /* update length of the received data */
-    *newplength = ntohs(plength)-16;
+    *newplength = nread-16;
 
     struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
     tp->net     = &tap_fd;
@@ -382,72 +400,6 @@ void* netTotap_s(void* input)
 
     pthread_create(&tid, &a, sendToTap, (void *)tp);
   }
-  // fclose(fp_rec);
-}
-
-/**************************************************************************
- * netTotap_c: Net interface to Tap interface pthread.                      *
- **************************************************************************/
-/* thread version */
-void* netTotap_c(void* input)
-{
-  do_debug("net to tap thread is up!\n");
-
-  int      tap_fd = *((struct fds*)input)->tap;
-  int      net_fd = *((struct fds*)input)->net;
-  uint16_t nread, nwrite, plength;
-  struct   timeval time_send, time_receive, time_delay;
-
-  pthread_t tid;
-  pthread_attr_t a;
-  pthread_attr_init(&a);
-  pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);
-
-  // FILE *fp_rec = fopen("delay_time_sToc.txt", "w");
-  
-  /* register SIGPIPE signal */
-  signal(SIGPIPE, signal_pipe);
-
-  while(1)
-  {
-    /* keep reading the data from net interface */
-    nread = read_n(net_fd, (char *)&plength, sizeof(plength));
-
-    if (nread == 0) {
-       /* ctrl-c at the other end */
-      break;
-    }
-
-    uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
-    char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
-    long int   *thr_time = (long int *)malloc(sizeof(long int));
-
-    /* read packet */
-    nread = read_n(net_fd, buffer, ntohs(plength));
-
-    /* get the send time for the packet */
-    time_send.tv_sec  = ctoi(ntohs(plength)-16, buffer);
-    time_send.tv_usec = ctoi(ntohs(plength)-8, buffer);
-
-    /* calculate the delay */
-    gettimeofday(&time_receive, NULL);
-    timersub(&time_receive, &time_send, &time_delay);
-    // fprintf(fp_rec, "%ld\n", time_delay.tv_usec);
-    // fflush(fp_rec);
-    *thr_time = time_delay.tv_usec;
-
-    /* update length of the received data */
-    *newplength = ntohs(plength)-16;
-
-    struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
-    tp->net     = &tap_fd;
-    tp->plength = newplength;
-    tp->buffer  = buffer;
-    tp->time    = thr_time;
-
-    pthread_create(&tid, &a, sendToTap, (void *)tp);
-  }
-  // fclose(fp_rec);
 }
 
 /**************************************************************************
@@ -471,7 +423,7 @@ void usage(void) {
   fprintf(stderr, "%s -h\n", progname);
   fprintf(stderr, "\n");
   fprintf(stderr, "-i <ifacename>: Name of interface to use (mandatory)\n");
-  fprintf(stderr, "-s|-c <serverIP>: run in server mode (-s), or specify server address (-c <serverIP>) (mandatory)\n");
+  fprintf(stderr, "-s <clientIP>|-c <serverIP>: run in server mode (-s <clientIP>), or specify server address (-c <serverIP>) (mandatory)\n");
   fprintf(stderr, "-p <port>: port to listen on (if run in server mode) or to connect to (in client mode), default 55555\n");
   fprintf(stderr, "-u|-a: use TUN (-u, default) or TAP (-a)\n");
   fprintf(stderr, "-d: outputs debug information while running\n");
@@ -485,7 +437,8 @@ int main(int argc, char *argv[]) {
   int flags = IFF_TUN;
   char if_name[IFNAMSIZ] = "";
   struct sockaddr_in local, remote;
-  char remote_ip[16] = "";            /* dotted quad IP string */
+  char server_ip[16] = "";            /* dotted quad IP string */
+  char client_ip[16] = "";            /* dotted quad IP string */
   unsigned short int port = PORT;
   int sock_fd, net_fd, optval = 1;
   socklen_t remotelen;
@@ -494,7 +447,7 @@ int main(int argc, char *argv[]) {
   progname = argv[0];
   
   /* Check command line options */
-  while ((option = getopt(argc, argv, "i:sc:p:uahd")) > 0) {
+  while ((option = getopt(argc, argv, "i:s:c:p:uahd")) > 0) {
     switch(option) {
       case 'd':
         debug = 1;
@@ -507,10 +460,13 @@ int main(int argc, char *argv[]) {
         break;
       case 's':
         cliserv = SERVER;
+        printf("%s\n", optarg);
+        strncpy(client_ip, optarg, 15);
         break;
       case 'c':
         cliserv = CLIENT;
-        strncpy(remote_ip, optarg, 15);
+        printf("%s\n", optarg);
+        strncpy(server_ip, optarg, 15);
         break;
       case 'p':
         port = atoi(optarg);
@@ -541,8 +497,11 @@ int main(int argc, char *argv[]) {
   } else if(cliserv < 0) {
     my_err("Must specify client or server mode!\n");
     usage();
-  } else if((cliserv == CLIENT)&&(*remote_ip == '\0')) {
+  } else if((cliserv == CLIENT)&&(*server_ip == '\0')) {
     my_err("Must specify server address!\n");
+    usage();
+  } else if((cliserv == SERVER)&&(*client_ip == '\0')) {
+    my_err("Must specify client address!\n");
     usage();
   }
 
@@ -552,24 +511,12 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  if (cliserv == CLIENT) {
-    /* make the tap_fd non-blocking */
-    flags = fcntl(tap_fd, F_GETFL, 0);
-    fcntl(tap_fd, F_SETFL, flags | O_NONBLOCK);
-  }
-
   do_debug("Successfully connected to interface %s\n", if_name);
 
-  if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+  if ((sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     perror("socket()");
     exit(1);
   }
-
-  int enabled = 1;
-  if (setsockopt(sock_fd, SOL_SOCKET, SO_TIMESTAMP, &enabled, sizeof(enabled)) < 0) {
-    perror("setsockopt()");
-    exit(1);
-  } 
 
   if (cliserv == CLIENT) {
     /* Client, try to connect to server */
@@ -577,25 +524,10 @@ int main(int argc, char *argv[]) {
     /* assign the destination address */
     memset(&remote, 0, sizeof(remote));
     remote.sin_family = AF_INET;
-    remote.sin_addr.s_addr = inet_addr(remote_ip);
+    remote.sin_addr.s_addr = inet_addr(server_ip);
     remote.sin_port = htons(port);
-
-    /* connection request */
-    if (connect(sock_fd, (struct sockaddr*) &remote, sizeof(remote)) < 0) {
-      perror("connect()");
-      exit(1);
-    }
-    net_fd = sock_fd;
-
-    do_debug("CLIENT: Connected to server %s\n", inet_ntoa(remote.sin_addr));
   } else {
     /* Server, wait for connections */
-
-    /* avoid EADDRINUSE error on bind() */
-    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)) < 0) {
-      perror("setsockopt()");
-      exit(1);
-    }
     
     memset(&local, 0, sizeof(local));
     local.sin_family = AF_INET;
@@ -605,26 +537,13 @@ int main(int argc, char *argv[]) {
       perror("bind()");
       exit(1);
     }
-    
-    if (listen(sock_fd, 5) < 0) {
-      perror("listen()");
-      exit(1);
-    }
-    
-    /* wait for connection request */
-    remotelen = sizeof(remote);
-    memset(&remote, 0, remotelen);
-    if ((net_fd = accept(sock_fd, (struct sockaddr*)&remote, &remotelen)) < 0) {
-      perror("accept()");
-      exit(1);
-    }
-
-    do_debug("SERVER: Client connected from %s\n", inet_ntoa(remote.sin_addr));
   }
 
   struct fds *fd = (struct fds *)malloc(sizeof(struct fds));
-  fd->tap = &tap_fd;
-  fd->net = &net_fd;
+  fd->tap      = &tap_fd;
+  fd->net      = &sock_fd;
+  fd->servaddr = &remote;
+  fd->clitaddr = &local;
 
   /* create the tap to net pthread */
   if (cliserv == CLIENT) {
@@ -634,7 +553,7 @@ int main(int argc, char *argv[]) {
     }
     if (pthread_create(&netTotap_id, NULL, netTotap_c, (void *)fd))
     {
-      printf("pthread_create net to tap err\n");
+      printf("CLIENT: pthread_create net to tap err\n");
     }
   } else {
     if (pthread_create(&tapTonet_id, NULL, tapTonet_s, (void *)fd))
@@ -643,7 +562,7 @@ int main(int argc, char *argv[]) {
     }
     if (pthread_create(&netTotap_id, NULL, netTotap_s, (void *)fd))
     {
-      printf("pthread_create net to tap err\n");
+      printf("SERVER: pthread_create net to tap err\n");
     }
   }
   
