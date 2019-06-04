@@ -29,7 +29,7 @@
 #define CLIENT 0
 #define SERVER 1
 #define PORT 55555
-#define SHAPINGDELAY 1000000
+#define SHAPINGDELAY 150000
 
 int debug;
 char *progname;
@@ -130,14 +130,12 @@ int tun_alloc(char *dev, int flags) {
 int cread(int fd, struct sockaddr_in *si, char *buf, int n){
   
   int nread;
-  socklen_t len;
+  unsigned int len = sizeof(*si);
 
-  nread = recvfrom(fd, buf, n, 0, si, &len);
-
-  // if (nread == -1 && errno != EINTR){
-  //     perror("Reading data");
-  //     exit(1);
-  // }
+  if((nread=recvfrom(fd, buf, n, MSG_WAITALL, si, &len)) < 0){
+    perror("Reading data");
+    exit(1);
+  }
 
   return nread;
 }
@@ -148,7 +146,12 @@ int cread(int fd, struct sockaddr_in *si, char *buf, int n){
  **************************************************************************/
 int cwrite(int fd, struct sockaddr_in *si, char *buf, int n){
   
-  int nwrite = sendto(fd, buf, n, 0, si, sizeof(*si));
+  int nwrite;
+
+  if((nwrite=sendto(fd, buf, n, MSG_CONFIRM, si, sizeof(*si))) < 0){
+    perror("Writing data");
+    exit(1);
+  }
   return nwrite;
 }
 
@@ -195,7 +198,7 @@ void *sendToTap(void *arg) {
   if (delay > 0) usleep(delay);
 
   nwrite = tapwrite(*(data->net), data->buffer, *(data->plength));
-  do_debug("NET2TAP: Written %d bytes to the tap interface\n", nwrite);
+  do_debug("NET2TAP-thread: Written %d bytes to the tap interface\n", nwrite);
 
   /* free the space */
   free(data->plength);
@@ -289,7 +292,7 @@ void* netTotap_c(void* input)
 
     /* read packet */
     nread = cread(net_fd, si, buffer, BUFSIZE);
-    if (nread < 0) continue;
+    // if (nread < 0) continue;
     do_debug("NET2TAP: Read %d bytes from the network\n", nread);
 
     /* get the send time for the packet */
@@ -377,7 +380,7 @@ void* netTotap_s(void* input)
 
     /* read packet */
     nread = cread(net_fd, si, buffer, BUFSIZE);
-    if (nread < 0) continue;
+    // if (nread < 0) continue;
     do_debug("NET2TAP: Read %d bytes from the network\n", nread);
 
     /* get the send time for the packet */

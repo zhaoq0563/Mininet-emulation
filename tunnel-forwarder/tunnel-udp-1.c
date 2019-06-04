@@ -96,7 +96,8 @@ int tun_alloc(char *dev, int flags) {
  **************************************************************************/
 int cread(int fd, struct sockaddr_in *si, char *buf, int n){
   
-  int nread, len;
+  int nread;
+  unsigned int len = sizeof(*si);
 
   if((nread=recvfrom(fd, buf, n, MSG_WAITALL, si, &len)) < 0){
     perror("Reading data");
@@ -118,25 +119,6 @@ int cwrite(int fd, struct sockaddr_in *si, char *buf, int n){
     exit(1);
   }
   return nwrite;
-}
-
-/**************************************************************************
- * read_n: ensures we read exactly n bytes, and puts them into "buf".     *
- *         (unless EOF, of course)                                        *
- **************************************************************************/
-int read_n(int fd, struct sockaddr_in *si, char *buf, int n) {
-
-  int nread, left = n;
-
-  while(left > 0) {
-    if ((nread = cread(fd, si, buf, left)) == 0){
-      return 0 ;      
-    }else {
-      left -= nread;
-      buf += nread;
-    }
-  }
-  return n;  
 }
 
 /**************************************************************************
@@ -212,10 +194,7 @@ void* tapTonet_c(void* input)
     nread = tapread(tap_fd, buffer, BUFSIZE);
     do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
-    plength = htons(nread);
-
     /* forward the data to tunnel */
-    nwrite  = cwrite(net_fd, si, (char *)&plength, sizeof(plength));
     nwrite  = cwrite(net_fd, si, buffer, nread);
     do_debug("TAP2NET: Written %d bytes to the network\n", nwrite);
   }
@@ -239,17 +218,8 @@ void* netTotap_c(void* input)
 
   while(1)
   {
-    /* keep reading the data from net interface */
-    nread = read_n(net_fd, si, (char *)&plength, sizeof(plength));
-    do_debug("Data length: %d\n", ntohs(plength));
-
-    if (nread == 0) {
-       /* ctrl-c at the other end */
-      break;
-    }
-
     /* read packet */
-    nread = read_n(net_fd, si, buffer, ntohs(plength));
+    nread = cread(net_fd, si, buffer, BUFSIZE);
     do_debug("NET2TAP: Read %d bytes from the network\n", nread);
     /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
     nwrite = tapwrite(tap_fd, buffer, nread);
@@ -275,14 +245,10 @@ void* tapTonet_s(void* input)
   while(1)
   {
     nread = tapread(tap_fd, buffer, BUFSIZE);
-   
     do_debug("TAP2NET: Read %d bytes from the tap interface\n", nread);
 
-    /* write length + packet */
-    plength = htons(nread);
-    nwrite = cwrite(net_fd, si, (char *)&plength, sizeof(plength));
+    /* write packet */
     nwrite = cwrite(net_fd, si, buffer, nread);
-    
     do_debug("TAP2NET: Written %d bytes to the network\n", nwrite);
   }
 }
@@ -305,17 +271,8 @@ void* netTotap_s(void* input)
 
   while(1)
   {
-    /* keep reading the data from net interface */
-    nread = read_n(net_fd, si, (char *)&plength, sizeof(plength));
-    do_debug("Data length: %d\n", ntohs(plength));
-
-    if (nread == 0) {
-       /* ctrl-c at the other end */
-      break;
-    }
-
     /* read packet */
-    nread = read_n(net_fd, si, buffer, ntohs(plength));
+    nread = cread(net_fd, si, buffer, BUFSIZE);
     do_debug("NET2TAP: Read %d bytes from the network\n", nread);
     /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
     nwrite = tapwrite(tap_fd, buffer, nread);
@@ -432,12 +389,6 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  // if (cliserv == CLIENT) {
-  //   /* make the tap_fd non-blocking */
-  //   flags = fcntl(tap_fd, F_GETFL, 0);
-  //   fcntl(tap_fd, F_SETFL, flags | O_NONBLOCK);
-  // }
-
   do_debug("Successfully connected to interface %s\n", if_name);
 
   if ((sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -445,14 +396,8 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  // int enabled = 1;
-  // if (setsockopt(sock_fd, SOL_SOCKET, SO_TIMESTAMP, &enabled, sizeof(enabled)) < 0) {
-  //   perror("setsockopt()");
-  //   exit(1);
-  // } 
-
   if (cliserv == CLIENT) {
-    /* Client, try to connect to server */
+    /* Client */
 
     /* assign the destination address */
     memset(&remote, 0, sizeof(remote));
@@ -460,13 +405,7 @@ int main(int argc, char *argv[]) {
     remote.sin_addr.s_addr = inet_addr(server_ip);
     remote.sin_port = htons(port);
   } else {
-    /* Server, wait for connections */
-
-    /* avoid EADDRINUSE error on bind() */
-    // if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)) < 0) {
-    //   perror("setsockopt()");
-    //   exit(1);
-    // }
+    /* Server */
     
     memset(&local, 0, sizeof(local));
     local.sin_family = AF_INET;
@@ -476,21 +415,6 @@ int main(int argc, char *argv[]) {
       perror("bind()");
       exit(1);
     }
-    
-    // if (listen(sock_fd, 5) < 0) {
-    //   perror("listen()");
-    //   exit(1);
-    // }
-    
-    // /* wait for connection request */
-    // remotelen = sizeof(remote);
-    // memset(&remote, 0, remotelen);
-    // if ((net_fd = accept(sock_fd, (struct sockaddr*)&remote, &remotelen)) < 0) {
-    //   perror("accept()");
-    //   exit(1);
-    // }
-
-    // do_debug("SERVER: Client connected from %s\n", inet_ntoa(remote.sin_addr));
   }
 
   struct fds *fd = (struct fds *)malloc(sizeof(struct fds));
