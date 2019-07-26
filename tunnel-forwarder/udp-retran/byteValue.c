@@ -16,7 +16,7 @@ uint8_t bitValue(uint8_t *pbuf, int pos){
     uint8_t bitpos = pos % 8;
     uint8_t mask = 1<<bitpos;
     pos = (pos-bitpos) / 8;
-    result = byteValue(pbuf, pos, mask)
+    result = byteValue(pbuf, pos, mask);
     return result;
 }
 

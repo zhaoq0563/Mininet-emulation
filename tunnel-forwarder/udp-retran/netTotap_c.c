@@ -8,10 +8,10 @@ void* netTotap_c(void *input)
 {
     do_debug("Net to Tap thread is up!\n");
 
-    int             tap_fd = *((struct fds*)input)->tap;
-    int             net_fd = *((struct fds*)input)->net;
-    struct sockaddr_in *si = ((struct fds*)input)->servaddr;
-    char          *pAckbuf = ((struct fds*)input)->pAckbuf;
+    int             tap_fd = *((struct fds *)input)->tap;
+    int             net_fd = *((struct fds *)input)->net;
+    struct sockaddr_in *si = ((struct fds *)input)->servaddr;
+    char          *pAckbuf = ((struct fds *)input)->pAckbuf;
 
     uint16_t nread, nwrite;
     char     buffer[BUFSIZE];
@@ -56,7 +56,7 @@ void* netTotap_c(void *input)
                 if (AckIDCnt[0] > 500) {
                     // issue a warning that ackid buffer size is not enough
                 } else {
-                    unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_1+AckIDCnt_1*2);
+                    unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_1+AckIDCnt[0]*2);
                     *pkID_pointer = h.pkID;
                     AckIDCnt[0]++;
                 }
@@ -64,7 +64,7 @@ void* netTotap_c(void *input)
                 if(AckIDCnt[1] > 500){
                     // issue a warning that ackid buffer size is not enough
                 } else {
-                    unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_2+AckIDCnt_2*2);
+                    unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_2+AckIDCnt[1]*2);
                     *pkID_pointer = h.pkID;
                     AckIDCnt[1]++;
                 }
@@ -72,7 +72,7 @@ void* netTotap_c(void *input)
                 if(AckIDCnt[2]>500){
                     // issue a warning that ackid buffer size is not enough
                 } else {
-                    unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_3+AckIDCnt_2*3);
+                    unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_3+AckIDCnt[2]*3);
                     *pkID_pointer = h.pkID;
                     AckIDCnt[2]++;
                 }

@@ -121,14 +121,14 @@ int main(int argc, char *argv[]) {
 
     /* Retrieve the data and the client address */
     int len = sizeof(cli);
-    int count = recvfrom(sock_fd, buffer, BUFSIZE, 0, (struct sockaddr *)&cli, &len);
+    int count = recvfrom(sock_fd, buf, BUFSIZE, 0, (struct sockaddr *)&cli, &len);
     if (count == -1) {
       perror("recvfrom()");
       exit(1);
     }
     do_debug("Received msg from addr:%s, port:%d\n", inet_ntoa(cli.sin_addr), ntohs(cli.sin_port));
 
-    memset(buffer, 0, BUFSIZE);
+    memset(buf, 0, BUFSIZE);
   }
 
   struct fds *fd = (struct fds *)malloc(sizeof(struct fds));

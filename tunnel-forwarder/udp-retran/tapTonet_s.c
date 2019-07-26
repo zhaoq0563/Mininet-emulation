@@ -8,10 +8,10 @@ void* tapTonet_s(void *input)
 {
     do_debug("Tap to Net thread is up!\n");
 
-    int             tap_fd = *((struct fds*)input)->tap;
-    int             net_fd = *((struct fds*)input)->net;
-    struct sockaddr_in *si = ((struct fds*)input)->clitaddr;
-    char          *pAckbuf = ((struct fds*)input)->pAckbuf;
+    int             tap_fd = *((struct fds *)input)->tap;
+    int             net_fd = *((struct fds *)input)->net;
+    struct sockaddr_in *si = ((struct fds *)input)->clitaddr;
+    char          *pAckbuf = ((struct fds *)input)->pAckbuf;
 
     uint16_t  nwrite, plength;
     unsigned short int curpktID = 0;                 /* initialize packet id as 0 */

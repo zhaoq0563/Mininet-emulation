@@ -6,11 +6,13 @@
 
 void *retransmit(void *arg)
 {
-	int             net_fd = *((struct fds*)arg)->net;
-	struct sockaddr_in *si = ((struct fds*)arg)->targetAddr;
-	char          *pAckbuf = ((struct fds*)arg)->pAckbuf;
-	char           *buffer = ((struct fds*)arg)->dataBuf;
-	uint16_t        *nread = ((struct fds*)arg)->nread;
+	struct retranPar *data = (struct retranPar *)arg;
+
+	int             net_fd = *((struct retranPar *)data)->net;
+	struct sockaddr_in *si = ((struct retranPar *)data)->targetAddr;
+	char          *pAckbuf = ((struct retranPar *)data)->pAckbuf;
+	char           *buffer = ((struct retranPar *)data)->dataBuf;
+	uint16_t        *nread = ((struct retranPar *)data)->nread;
 
     uint16_t nwrite;
 
@@ -18,12 +20,12 @@ void *retransmit(void *arg)
 	usleep(RTD);
 
 	if (!bitValue(pAckbuf, getHeader(buffer).pkID)) {
-        nwrite = cwrite(net_fd, si, buffer, nread);
+        nwrite = cwrite(net_fd, si, buffer, *nread);
 		do_debug("Pkt retransmit: Written %d bytes to the Net interface\n", nwrite);
 	}
 
 	/* free the space */
-	free(arg->nread);
-	free(arg->buffer);
-	free(arg);
+	free(data->nread);
+	free(data->dataBuf);
+	free(data);
 }
