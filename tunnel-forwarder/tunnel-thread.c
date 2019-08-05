@@ -29,7 +29,7 @@
 #define CLIENT 0
 #define SERVER 1
 #define PORT 55555
-#define SHAPINGDELAY 1000000
+#define SHAPINGDELAY 800000
 
 int debug;
 char *progname;

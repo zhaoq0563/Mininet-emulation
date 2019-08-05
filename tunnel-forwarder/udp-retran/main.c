@@ -138,21 +138,24 @@ int main(int argc, char *argv[]) {
   fd->servaddr   = &ser;
   fd->clitaddr   = &cli;
 
-  if (pthread_create(&tapTonet_id, NULL, tapTonet_c, (void *)fd))
-  {
-    my_err("CLIENT: pthread_create tap to net err\n");
-  }
-  if (pthread_create(&netTotap_id, NULL, netTotap_c, (void *)fd))
-  {
-    my_err("CLIENT: pthread_create net to tap err\n");
-  }
-  if (pthread_create(&netTotap_id, NULL, netTotap_s, (void *)fd))
-  {
-    my_err("SERVER: pthread_create net to tap err\n");
-  }
-  if (pthread_create(&tapTonet_id, NULL, tapTonet_s, (void *)fd))
-  {
-    my_err("SERVER: pthread_create tap to net err\n");
+  if (cliserv == CLIENT) {
+    if (pthread_create(&tapTonet_id, NULL, tapTonet_c, (void *)fd))
+    {
+      my_err("CLIENT: pthread_create tap to net err\n");
+    }
+    if (pthread_create(&netTotap_id, NULL, netTotap_c, (void *)fd))
+    {
+      my_err("CLIENT: pthread_create net to tap err\n");
+    }
+  } else {
+    if (pthread_create(&netTotap_id, NULL, netTotap_s, (void *)fd))
+    {
+      my_err("SERVER: pthread_create net to tap err\n");
+    }
+    if (pthread_create(&tapTonet_id, NULL, tapTonet_s, (void *)fd))
+    {
+      my_err("SERVER: pthread_create tap to net err\n");
+    }
   }
 
   /* block the threads at this point until netTotap exits */

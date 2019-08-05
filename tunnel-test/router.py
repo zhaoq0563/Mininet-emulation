@@ -70,11 +70,11 @@ def mobileNet(loc, loss, conges, delay):
     node = net.addSwitch('s2')
     nodes['s2'] = node
 
-    net.addLink(nodes['r1'], nodes['r2'], intfName1='r1-eth0', intfName2='r2-eth0', bw=10, delay=str(delay)+'ms', loss=float(loss)*100)
-    net.addLink(nodes['s1'], nodes['r1'], intfName2='r1-eth1', bw=10)
-    net.addLink(nodes['s2'], nodes['r2'], intfName2='r2-eth1', bw=10)
-    net.addLink(nodes['h1'], nodes['s1'], bw=10)
-    net.addLink(nodes['h2'], nodes['s2'], bw=10)
+    net.addLink(nodes['r1'], nodes['r2'], intfName1='r1-eth0', intfName2='r2-eth0', bw=5, delay=str(delay)+'ms', loss=float(loss)*100)
+    net.addLink(nodes['s1'], nodes['r1'], intfName2='r1-eth1', bw=5)
+    net.addLink(nodes['s2'], nodes['r2'], intfName2='r2-eth1', bw=5)
+    net.addLink(nodes['h1'], nodes['s1'], bw=5)
+    net.addLink(nodes['h2'], nodes['s2'], bw=5)
 
     node = net.addController('c0')
     nodes['c0'] = node
@@ -92,8 +92,8 @@ def mobileNet(loc, loss, conges, delay):
     r2.cmd('ip route add 10.0.1.0/24 via 192.168.0.2')
 
     # Launching the forwarder to initiate the tunnel
-    r2.cmd('../tunnel-forwarder/tunnel -i tunt2 -s -d &')
-    r1.cmd('../tunnel-forwarder/tunnel -i tunt1 -c 10.0.0.2 -d &')
+    # r2.cmd('../tunnel-forwarder/tunnel -i tunt2 -s -d &')
+    # r1.cmd('../tunnel-forwarder/tunnel -i tunt1 -c 10.0.0.2 -d &')
 
     # Adding tap interfaces for connecting VMs
     print("*** Configuring virtual ports for VMs ***")

@@ -21,7 +21,7 @@ void *retransmit(void *arg)
 
 	if (!bitValue(pAckbuf, getHeader(buffer).pkID)) {
         nwrite = cwrite(net_fd, si, buffer, *nread);
-		do_debug("Pkt retransmit: Written %d bytes to the Net interface\n", nwrite);
+		do_debug("Pkt retransmit: Written %d bytes to the Net interface\t pkt ID: %d\n", nwrite, getHeader(buffer).pkID);
 	}
 
 	/* free the space */
