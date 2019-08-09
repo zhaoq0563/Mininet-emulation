@@ -15,5 +15,5 @@ void addHeader(char* buff, uint8_t dataType, unsigned short int pkID){
     *pkID_pointer = pkID;
 
     long int *timeStampPointer = (long int*)(buff+3);
-    *timeStampPointer = 1000000L*(t.tv_sec%1000) + t.tv_usec;
+    *timeStampPointer = 1000000L*(t.tv_sec%10000) + t.tv_usec;
 }

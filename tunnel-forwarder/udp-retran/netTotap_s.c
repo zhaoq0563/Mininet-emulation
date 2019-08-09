@@ -14,7 +14,6 @@ void* netTotap_s(void *input)
     char          *pAckbuf = ((struct fds *)input)->pAckbuf;
 
     uint16_t nread, nwrite;
-    char     buffer[BUFSIZE];
 
     char AckIDbuffer_1[1000];                   /* hold 500 ack id */
     char AckIDbuffer_2[1000];                   /* hold 500 ack id */
@@ -27,7 +26,7 @@ void* netTotap_s(void *input)
 
     struct timeval time_receive;
     gettimeofday(&time_receive, NULL);
-    long int timeStamp_prevSent = 1000000L * (time_receive.tv_sec) + time_receive.tv_usec;
+    long int timeStamp_prevSent = 1000000L * (time_receive.tv_sec%10000) + time_receive.tv_usec;
 
     pthread_t tid;
     pthread_attr_t a;
@@ -37,8 +36,15 @@ void* netTotap_s(void *input)
     /* register SIGPIPE signal */
     signal(SIGPIPE, signal_pipe);
 
+    FILE *fp_rec = fopen("delay-shaping.txt", "w");
+
     while(1)
     {
+        /* prepare the parameters for delay shaping threads */
+        uint16_t *newplength = (uint16_t *)malloc(sizeof(uint16_t));
+        char         *buffer = (char *)malloc(BUFSIZE * sizeof(char));
+        long int   *thr_time = (long int *)malloc(sizeof(long int));
+
         /* read packet */
         nread = cread(net_fd, si, buffer, BUFSIZE);
         do_debug("NET2TAP: Read %d bytes from the network\n", nread);
@@ -76,7 +82,7 @@ void* netTotap_s(void *input)
 
             /* decide whether acks need to be sent */
             gettimeofday(&time_receive, NULL);
-            long int curTimestamp = 1000000L * (time_receive.tv_sec) + time_receive.tv_usec;   
+            long int curTimestamp = 1000000L * (time_receive.tv_sec%10000) + time_receive.tv_usec;   
             long int timegap = curTimestamp - timeStamp_prevSent;
             if (timegap/1000 > AckInt_ms && (AckIDCnt[0]+AckIDCnt[1]+AckIDCnt[2]) != 0){
                 uint8_t dataType = 2;                               /* ack package data type 2 */
@@ -102,8 +108,23 @@ void* netTotap_s(void *input)
                 timeStamp_prevSent = curTimestamp;
             }
 
-            nwrite = tapwrite(tap_fd, buffer+HEADERSIZE, nread-HEADERSIZE);
-            do_debug("NET2TAP: Write %d bytes to the tap\n", nwrite);
+            buffer = buffer + HEADERSIZE;
+
+            *thr_time = getDelay(h.timeStamp);
+
+            fprintf(fp_rec, "%ld\n", *thr_time);
+            fflush(fp_rec);
+
+            /* update length of the received data */
+            *newplength = nread-HEADERSIZE;
+
+            struct thdPar *tp = (struct thdPar *)malloc(sizeof(struct thdPar));
+            tp->net     = &tap_fd;
+            tp->plength = newplength;
+            tp->buffer  = buffer;
+            tp->time    = thr_time;
+
+            pthread_create(&tid, &a, sendToTap, (void *)tp);
 
         } else if (h.dataType == 2) {                               /* ack package */
             uint16_t ackCnt = (nread - HEADERSIZE) / 2;
@@ -116,4 +137,5 @@ void* netTotap_s(void *input)
             }
         }
     }
+    fclose(fp_rec);
 }

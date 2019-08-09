@@ -31,7 +31,7 @@ void* tapTonet_c(void *input)
 
         /* read the data from tap interface */
         *nread = tapread(tap_fd, buffer+HEADERSIZE, BUFSIZE-HEADERSIZE);
-        // do_debug("TAP2NET: Read %d bytes from the tap interface\n", *nread);
+        do_debug("TAP2NET: Read %d bytes from the tap interface\n", *nread);
 
         /* add the 11 bytes packet header at the beginning of the buffer*/
         uint8_t dataType = 1;

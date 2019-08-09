@@ -12,7 +12,7 @@ void *sendToTap(void *arg)
   /* sleep for delay shaping */
   long int delay = (SHAPINGDELAY - *(data->time));
   if (delay > 0) {
-  	printf("thread %d will sleep for %ld usecs!\n", (int)pthread_self(), delay);
+  	do_debug("thread %d will sleep for %ld usecs!\n", (int)pthread_self(), delay);
   	usleep(delay);
   }
 
