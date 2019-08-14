@@ -21,7 +21,7 @@ void* netTotap_s(void *input)
     int AckIDCnt[3] = {0};
 
     uint8_t curAckIDbuf = 1;
-    uint8_t AckInt_ms = 100;                    /* send Ack packet back every AckInt_ms */
+    uint8_t AckInt_ms = 10;                     /* send Ack packet back every AckInt_ms */
     char bufferAckReturn[3011];                 /* buffer for sending Ack packets */
 
     struct timeval time_receive;
@@ -47,7 +47,7 @@ void* netTotap_s(void *input)
 
         /* read packet */
         nread = cread(net_fd, si, buffer, BUFSIZE);
-        do_debug("NET2TAP: Read %d bytes from the network\n", nread);
+        // do_debug("NET2TAP: Read %d bytes from the network\n", nread);
 
         /* get the header from the packet */
         struct pkHeader h = getHeader(buffer);
@@ -98,7 +98,7 @@ void* netTotap_s(void *input)
 
                 /* send bufferAckReturn, acksize back */
                 nwrite = cwrite(net_fd, si, bufferAckReturn, acksize);
-                do_debug("NET2TAP ACK: %d bytes acks sent\n", nwrite);
+                // do_debug("NET2TAP ACK: %d bytes acks sent\n", nwrite);
 
                 /* update current AckIDbuffer */
                 curAckIDbuf = ++curAckIDbuf > 3 ? 1 : curAckIDbuf;
@@ -128,7 +128,7 @@ void* netTotap_s(void *input)
 
         } else if (h.dataType == 2) {                               /* ack package */
             uint16_t ackCnt = (nread - HEADERSIZE) / 2;
-            do_debug("NET2TAP ACK: %d acks received from the client\n", ackCnt);
+            // do_debug("NET2TAP ACK: %d acks received from the client\n", ackCnt);
 
             for (int i=0; i<ackCnt; ++i) {
                 unsigned short int *pkID_pointer = (unsigned short int*)(buffer + HEADERSIZE + 2*i);

@@ -10,14 +10,14 @@ void *sendToTap(void *arg)
   struct thdPar *data = (struct thdPar *)arg;
 
   /* sleep for delay shaping */
-  long int delay = (SHAPINGDELAY - *(data->time));
-  if (delay > 0) {
-  	do_debug("thread %d will sleep for %ld usecs!\n", (int)pthread_self(), delay);
-  	usleep(delay);
-  }
+  // long int delay = (SHAPINGDELAY - *(data->time));
+  // if (delay > 0) {
+  // 	do_debug("thread %d will sleep for %ld usecs!\n", (int)pthread_self(), delay);
+  // 	usleep(delay);
+  // }
 
   nwrite = tapwrite(*(data->net), data->buffer, *(data->plength));
-  do_debug("NET2TAP-thread: Written %d bytes to the tap interface\n", nwrite);
+  // do_debug("NET2TAP-thread: Written %d bytes to the tap interface\n", nwrite);
 
   /* free the space */
   free(data->plength);

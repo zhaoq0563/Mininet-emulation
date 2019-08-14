@@ -26,7 +26,7 @@ void* netTotap_c(void *input)
 
     struct timeval time_receive;
     gettimeofday(&time_receive, NULL);
-    long int timeStamp_prevSent = 1000000L * (time_receive.tv_sec%10000) + time_receive.tv_usec;
+    long int timeStamp_prevSent = 1000000L * (time_receive.tv_sec) + time_receive.tv_usec;
 
     pthread_t tid;
     pthread_attr_t a;
@@ -44,7 +44,7 @@ void* netTotap_c(void *input)
 
         /* read packet */
         nread = cread(net_fd, si, buffer, BUFSIZE);
-        do_debug("NET2TAP: Read %d bytes from the network\n", nread);
+        // do_debug("NET2TAP: Read %d bytes from the network\n", nread);
 
         /* get the header from the packet */
         struct pkHeader h = getHeader(buffer);
@@ -54,6 +54,7 @@ void* netTotap_c(void *input)
             if (curAckIDbuf == 1) {
                 if (AckIDCnt[0] > 500) {
                     // issue a warning that ackid buffer size is not enough
+                    do_debug("ack buffer is not enough!");
                 } else {
                     unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_1+AckIDCnt[0]*2);
                     *pkID_pointer = h.pkID;
@@ -62,6 +63,7 @@ void* netTotap_c(void *input)
             } else if (curAckIDbuf == 2) {
                 if(AckIDCnt[1] > 500){
                     // issue a warning that ackid buffer size is not enough
+                    do_debug("ack buffer is not enough!");
                 } else {
                     unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_2+AckIDCnt[1]*2);
                     *pkID_pointer = h.pkID;
@@ -70,6 +72,7 @@ void* netTotap_c(void *input)
             } else if (curAckIDbuf == 3) {
                 if(AckIDCnt[2]>500){
                     // issue a warning that ackid buffer size is not enough
+                    do_debug("ack buffer is not enough!");
                 } else {
                     unsigned short int *pkID_pointer = (unsigned short int*)(AckIDbuffer_3+AckIDCnt[2]*2);
                     *pkID_pointer = h.pkID;
@@ -79,7 +82,7 @@ void* netTotap_c(void *input)
 
             /* decide whether acks need to be sent */
             gettimeofday(&time_receive, NULL);
-            long int curTimestamp = 1000000L * (time_receive.tv_sec%10000) + time_receive.tv_usec;   
+            long int curTimestamp = 1000000L * (time_receive.tv_sec) + time_receive.tv_usec;   
             long int timegap = curTimestamp - timeStamp_prevSent;
             if (timegap/1000 > AckInt_ms && (AckIDCnt[0]+AckIDCnt[1]+AckIDCnt[2]) != 0){
                 uint8_t dataType = 2;                       /* ack package data type 2 */
@@ -99,11 +102,10 @@ void* netTotap_c(void *input)
                 nwrite = cwrite(net_fd, si, bufferAckReturn, acksize);
 
                 // update current AckIDbuffer
-                curAckIDbuf = ++curAckIDbuf > 3 ? 1 : curAckIDbuf;
+                curAckIDbuf = ++curAckIDbuf > 3 ? 1 : curAckIDbuf;  
 
                 // reset AckIDbuff
-                AckIDCnt[curAckIDbuf-1] = 0;  
-
+                AckIDCnt[curAckIDbuf-1] = 0;
                 timeStamp_prevSent = curTimestamp;
             }
 
@@ -125,11 +127,11 @@ void* netTotap_c(void *input)
 
         } else if (h.dataType == 2) {                               /* ack package */
             uint16_t ackCnt = (nread - HEADERSIZE)/2;
-            do_debug("NET2TAP ack: %d acks received\n", ackCnt);
+            // do_debug("NET2TAP ack: %d acks received\n", ackCnt);
             for (int i=0; i<ackCnt; ++i) {
                 unsigned short int *pkID_pointer = (unsigned short int*)(buffer+HEADERSIZE+2*i);
                 unsigned short int pkID = *pkID_pointer;
-                do_debug("NET2TAP ack: acked %d\n", pkID);
+                // do_debug("NET2TAP ack: acked %d\n", pkID);
                 setbitValue(pAckbuf, pkID, 1);                      /* Ack packet with pkID */
             }
         }

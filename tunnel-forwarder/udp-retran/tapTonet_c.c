@@ -31,7 +31,7 @@ void* tapTonet_c(void *input)
 
         /* read the data from tap interface */
         *nread = tapread(tap_fd, buffer+HEADERSIZE, BUFSIZE-HEADERSIZE);
-        do_debug("TAP2NET: Read %d bytes from the tap interface\n", *nread);
+        // do_debug("TAP2NET: Read %d bytes from the tap interface\n", *nread);
 
         /* add the 11 bytes packet header at the beginning of the buffer*/
         uint8_t dataType = 1;
@@ -53,9 +53,9 @@ void* tapTonet_c(void *input)
                 ackCntcheck++;
             }
 
-            if (ackCntcheck > 5) {
-                // warning: cannot find acked pkID indiciating not enough packet id     
-            }
+            // if (ackCntcheck > 5) {
+            //     // warning: cannot find acked pkID indiciating not enough packet id     
+            // }
         }
 
         addHeader(buffer, dataType, pkID);
@@ -63,7 +63,7 @@ void* tapTonet_c(void *input)
 
         /* forward the data to tunnel */
         nwrite = cwrite(net_fd, si, buffer, *nread);
-        do_debug("TAP2NET: Written %d bytes to the network\t pkt ID: %d\n", nwrite, pkID);
+        // do_debug("TAP2NET: Written %d bytes to the network\t pkt ID: %d\n", nwrite, pkID);
 
         struct retranPar *retran = (struct retranPar *)malloc(sizeof(struct retranPar));
         retran->net        = &net_fd;
