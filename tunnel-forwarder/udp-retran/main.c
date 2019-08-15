@@ -14,10 +14,6 @@ int main(int argc, char *argv[]) {
   char buf[BUFSIZE] = "INITIALIZE ALL TUNNELS!\n";
   char ackbuf[8192] = "";                 /* support packet id range 0:65535 */
   memset(ackbuf, 255, 8192);              /* init all packet id as confirmed: 1 */
-  // for (int i=0; i<8192; ++i) {
-  //    ackbuf[i]=255;                    /* init all packet id as confirmed: 1 */
-  // }
-  // long int sendingTimeBuf[65536];  // this buffer can be used to record packet sending time stamp, allow the calculation of round trip time 
   int cliserv = -1;                       /* must be specified on cmd line */
 
   progname = argv[0];
@@ -90,7 +86,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* Assign the destination address */
-  	memset(&ser, 0, sizeof(ser));
+    memset(&ser, 0, sizeof(ser));
     ser.sin_family = AF_INET;
     ser.sin_addr.s_addr = inet_addr(server_ip);
     ser.sin_port = htons(PORT);

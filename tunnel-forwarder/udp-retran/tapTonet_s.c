@@ -50,9 +50,6 @@ void* tapTonet_s(void *input)
                 curpktID++;
                 ackCntcheck++;
             }
-            if(ackCntcheck > 5){
-                // warning: cannot find acked pkID indiciating not enough packet id     
-            }
         }
 
         addHeader(buffer, dataType, pkID);

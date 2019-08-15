@@ -34,7 +34,7 @@
 #define SERVER 1
 #define PORT 10086
 #define SHAPINGDELAY 800000
-#define RTD 500000
+#define RTD 1600000
 
 extern int debug;
 extern char *progname;
